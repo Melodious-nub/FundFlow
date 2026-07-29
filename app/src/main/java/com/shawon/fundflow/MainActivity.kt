@@ -4,6 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -33,6 +38,7 @@ import com.shawon.fundflow.ui.dashboard.DashboardScreen
 import com.shawon.fundflow.ui.expense.ExpenseScreen
 import com.shawon.fundflow.ui.history.HistoryScreen
 import com.shawon.fundflow.ui.onboarding.OnboardingScreen
+import com.shawon.fundflow.ui.settings.AboutScreen
 import com.shawon.fundflow.ui.settings.SettingsScreen
 import com.shawon.fundflow.ui.splash.SplashScreen
 import com.shawon.fundflow.ui.theme.FundFlowTheme
@@ -58,7 +64,6 @@ fun FundFlowAppContent() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    // Define routes that should show the bottom bar
     val bottomBarScreens = listOf(
         Screen.Dashboard,
         Screen.History,
@@ -72,6 +77,7 @@ fun FundFlowAppContent() {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0), // Key fix for nested padding
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar {
@@ -109,12 +115,21 @@ fun FundFlowAppContent() {
         NavHost(
             navController = navController,
             startDestination = Screen.Splash,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding), // Bottom padding for Nav Bar
+            enterTransition = { fadeIn(animationSpec = tween(300)) + slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(300)) },
+            exitTransition = { fadeOut(animationSpec = tween(300)) + slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(300)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(300)) + slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(300)) },
+            popExitTransition = { fadeOut(animationSpec = tween(300)) + slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(300)) }
         ) {
             composable<Screen.Splash> {
                 SplashScreen(
                     onNavigateToOnboarding = {
                         navController.navigate(Screen.Onboarding) {
+                            popUpTo(Screen.Splash) { inclusive = true }
+                        }
+                    },
+                    onNavigateToBudgetSetup = {
+                        navController.navigate(Screen.BudgetSetup) {
                             popUpTo(Screen.Splash) { inclusive = true }
                         }
                     },
@@ -150,6 +165,9 @@ fun FundFlowAppContent() {
                 DashboardScreen(
                     onNavigateToAddExpense = {
                         navController.navigate(Screen.ExpenseForm)
+                    },
+                    onNavigateToBudgetSetup = {
+                        navController.navigate(Screen.BudgetSetup)
                     }
                 )
             }
@@ -171,7 +189,19 @@ fun FundFlowAppContent() {
             }
 
             composable<Screen.Settings> {
-                SettingsScreen()
+                SettingsScreen(
+                    onNavigateToAbout = {
+                        navController.navigate(Screen.About)
+                    }
+                )
+            }
+
+            composable<Screen.About> {
+                AboutScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
             }
         }
     }

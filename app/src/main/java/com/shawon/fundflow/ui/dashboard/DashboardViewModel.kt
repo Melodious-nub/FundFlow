@@ -84,7 +84,7 @@ class DashboardViewModel @Inject constructor(
             remainingDays = remainingDays,
             dailySafeSpending = dailySafeSpending,
             progress = progress,
-            recentExpenses = expenses.take(10)
+            recentExpenses = expenses.take(20) // Show up to 20 expenses
         )
     }
 }

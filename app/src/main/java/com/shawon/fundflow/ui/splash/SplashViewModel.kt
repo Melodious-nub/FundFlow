@@ -3,6 +3,7 @@ package com.shawon.fundflow.ui.splash
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shawon.fundflow.data.local.UserPreferences
+import com.shawon.fundflow.domain.repository.BudgetRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -13,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SplashViewModel @Inject constructor(
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val repository: BudgetRepository
 ) : ViewModel() {
 
     private val _navigationEvent = MutableSharedFlow<SplashNavigation>()
@@ -24,7 +26,12 @@ class SplashViewModel @Inject constructor(
             delay(2000)
             val isOnboardingCompleted = userPreferences.isOnboardingCompleted.first()
             if (isOnboardingCompleted) {
-                _navigationEvent.emit(SplashNavigation.ToDashboard)
+                val activeCycle = repository.getActiveCycle().first()
+                if (activeCycle != null) {
+                    _navigationEvent.emit(SplashNavigation.ToDashboard)
+                } else {
+                    _navigationEvent.emit(SplashNavigation.ToBudgetSetup)
+                }
             } else {
                 _navigationEvent.emit(SplashNavigation.ToOnboarding)
             }
@@ -34,5 +41,6 @@ class SplashViewModel @Inject constructor(
 
 sealed interface SplashNavigation {
     data object ToOnboarding : SplashNavigation
+    data object ToBudgetSetup : SplashNavigation
     data object ToDashboard : SplashNavigation
 }

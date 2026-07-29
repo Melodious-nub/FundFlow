@@ -1,5 +1,7 @@
 package com.shawon.fundflow.ui.settings
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -7,104 +9,204 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.shawon.fundflow.core.designsystem.FundFlowCard
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    onNavigateToAbout: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val currency by viewModel.currencyCode.collectAsState()
+    var showCurrencySheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+
+    Box(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Settings",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Preferences",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingItem(
+                title = "Currency",
+                subtitle = "Active: $currency",
+                icon = Icons.Default.Payments,
+                onClick = { showCurrencySheet = true }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Application",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingItem(
+                title = "About FundFlow",
+                subtitle = "App details & Developer info",
+                icon = Icons.Default.Info,
+                onClick = onNavigateToAbout
+            )
+            
+            Spacer(modifier = Modifier.height(80.dp))
+        }
+    }
+
+    if (showCurrencySheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showCurrencySheet = false },
+            sheetState = sheetState
+        ) {
+            CurrencySelectionContent(
+                selectedCurrency = currency,
+                onCurrencySelected = { code ->
+                    scope.launch {
+                        viewModel.updateCurrency(code)
+                        sheetState.hide()
+                    }.invokeOnCompletion {
+                        if (!sheetState.isVisible) {
+                            showCurrencySheet = false
+                        }
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SettingItem(
+    title: String,
+    subtitle: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit
+) {
+    androidx.compose.material3.Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun CurrencySelectionContent(
+    selectedCurrency: String,
+    onCurrencySelected: (String) -> Unit
+) {
+    val currencies = listOf(
+        "TK" to "Bangladeshi Taka (৳)",
+        "USD" to "US Dollar ($)",
+        "EUR" to "Euro (€)",
+        "GBP" to "British Pound (£)",
+        "INR" to "Indian Rupee (₹)"
+    )
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+            .fillMaxWidth()
+            .padding(bottom = 32.dp)
     ) {
         Text(
-            text = "Settings",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
+            text = "Select Currency",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(16.dp)
         )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        FundFlowCard(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Payments,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(end = 16.dp)
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Currency",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+        HorizontalDivider()
+        currencies.forEach { (code, name) ->
+            ListItem(
+                headlineContent = { Text(name) },
+                leadingContent = {
+                    RadioButton(
+                        selected = selectedCurrency == code,
+                        onClick = { onCurrencySelected(code) }
                     )
-                    Text(
-                        text = "Current: $currency",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                TextButton(onClick = { viewModel.updateCurrency("TK") }) {
-                    Text("Default")
-                }
-            }
+                },
+                modifier = Modifier.clickable { onCurrencySelected(code) }
+            )
         }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        FundFlowCard(modifier = Modifier.fillMaxWidth()) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Info,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(end = 16.dp)
-                )
-                Column {
-                    Text(
-                        text = "About",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(text = "FundFlow v1.0", style = MaterialTheme.typography.bodyMedium)
-                    Text(
-                        text = "Smart Budget. Smarter Life.",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-        
-        Spacer(modifier = Modifier.weight(1f))
-        
-        Text(
-            text = "Developed by Shawon",
-            modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 16.dp),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }

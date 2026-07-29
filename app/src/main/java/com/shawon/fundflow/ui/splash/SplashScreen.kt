@@ -29,6 +29,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun SplashScreen(
     onNavigateToOnboarding: () -> Unit,
+    onNavigateToBudgetSetup: () -> Unit,
     onNavigateToDashboard: () -> Unit,
     viewModel: SplashViewModel = hiltViewModel()
 ) {
@@ -40,6 +41,7 @@ fun SplashScreen(
             when (event) {
                 SplashNavigation.ToDashboard -> onNavigateToDashboard()
                 SplashNavigation.ToOnboarding -> onNavigateToOnboarding()
+                SplashNavigation.ToBudgetSetup -> onNavigateToBudgetSetup()
             }
         }
     }

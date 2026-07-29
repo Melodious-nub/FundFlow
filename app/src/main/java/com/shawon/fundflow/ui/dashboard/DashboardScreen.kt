@@ -8,85 +8,94 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.shawon.fundflow.core.designsystem.FundFlowCard
 import com.shawon.fundflow.domain.model.Expense
+import com.shawon.fundflow.ui.settings.SettingsViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun DashboardScreen(
     onNavigateToAddExpense: () -> Unit,
-    viewModel: DashboardViewModel = hiltViewModel()
+    onNavigateToBudgetSetup: () -> Unit,
+    viewModel: DashboardViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val currencyCode by settingsViewModel.currencyCode.collectAsState()
 
-    LaunchedEffect(Unit) {
-        viewModel.snackbarEvent.collect { message ->
-            val result = snackbarHostState.showSnackbar(
-                message = message,
-                actionLabel = "Undo"
-            )
-            if (result == SnackbarResult.ActionPerformed) {
-                viewModel.undoDelete()
-            }
+    val currencySymbol = remember(currencyCode) {
+        when(currencyCode) {
+            "TK" -> "৳"
+            "USD" -> "$"
+            "EUR" -> "€"
+            "GBP" -> "£"
+            "INR" -> "₹"
+            else -> "৳"
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        floatingActionButton = {
+    Box(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+        when (val state = uiState) {
+            is DashboardUiState.Loading -> {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+            is DashboardUiState.NoActiveCycle -> {
+                Column(
+                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "No active budget cycle found.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = onNavigateToBudgetSetup) {
+                        Text("Create Budget Cycle")
+                    }
+                }
+            }
+            is DashboardUiState.Success -> {
+                DashboardContent(state, currencySymbol)
+            }
+        }
+
+        if (uiState is DashboardUiState.Success) {
             FloatingActionButton(
                 onClick = onNavigateToAddExpense,
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Expense")
-            }
-        }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            when (val state = uiState) {
-                is DashboardUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-                is DashboardUiState.NoActiveCycle -> {
-                    Text(
-                        text = "No active budget cycle found.",
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                is DashboardUiState.Success -> {
-                    DashboardContent(state, onDeleteExpense = viewModel::deleteExpense)
-                }
             }
         }
     }
@@ -95,85 +104,116 @@ fun DashboardScreen(
 @Composable
 private fun DashboardContent(
     state: DashboardUiState.Success,
-    onDeleteExpense: (Expense) -> Unit
+    currencySymbol: String
 ) {
+    val today = remember { SimpleDateFormat("EEEE, dd MMMM", Locale.getDefault()).format(Date()) }
+    val cycleDateFormatter = remember { SimpleDateFormat("dd MMM", Locale.getDefault()) }
+    val expenseDateFormatter = remember { SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()) }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(horizontal = 16.dp)
     ) {
         item {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = today,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold
+            )
             Text(
                 text = "Dashboard",
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                fontWeight = FontWeight.Bold
             )
-            Text(
-                text = state.cycle.name,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         item {
             FundFlowCard(modifier = Modifier.fillMaxWidth()) {
-                Text(text = "Current Balance", style = MaterialTheme.typography.labelMedium)
-                Text(
-                    text = "${state.currentBalance} TK",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "Current Balance", style = MaterialTheme.typography.labelMedium)
+                        Text(
+                            text = "$currencySymbol ${state.currentBalance}",
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Icon(
+                        Icons.Default.CalendarMonth,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
+                
                 Spacer(modifier = Modifier.height(16.dp))
+                
                 Row(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = "Remaining Days", style = MaterialTheme.typography.labelSmall)
                         Text(
                             text = "${state.remainingDays}",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = "Safe Spending", style = MaterialTheme.typography.labelSmall)
                         Text(
-                            text = "${state.dailySafeSpending} TK",
+                            text = "$currencySymbol ${state.dailySafeSpending}",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
 
         item {
             FundFlowCard(modifier = Modifier.fillMaxWidth()) {
-                Text(text = "Budget Progress", style = MaterialTheme.typography.labelMedium)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Cycle: ${state.cycle.name}",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = "${cycleDateFormatter.format(Date(state.cycle.startDate))} - ${cycleDateFormatter.format(Date(state.cycle.endDate))}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(
                     progress = { state.progress },
-                    modifier = Modifier.fillMaxWidth().height(12.dp),
+                    modifier = Modifier.fillMaxWidth().height(8.dp),
                     strokeCap = StrokeCap.Round,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant,
                     color = MaterialTheme.colorScheme.primary
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "${(state.progress * 100).toInt()}% spent",
+                    text = "${(state.progress * 100).toInt()}% of budget spent",
                     style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.align(Alignment.End)
+                    modifier = Modifier.align(Alignment.End),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
         item {
             Text(
                 text = "Recent Expenses",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(12.dp))
         }
@@ -189,15 +229,21 @@ private fun DashboardContent(
             }
         } else {
             items(state.recentExpenses) { expense ->
-                ExpenseItem(expense, onDelete = { onDeleteExpense(expense) })
+                ExpenseItem(
+                    expense = expense, 
+                    currencySymbol = currencySymbol,
+                    dateText = expenseDateFormatter.format(Date(expense.timestamp))
+                )
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
+        
+        item { Spacer(modifier = Modifier.height(80.dp)) }
     }
 }
 
 @Composable
-private fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
+private fun ExpenseItem(expense: Expense, currencySymbol: String, dateText: String) {
     FundFlowCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -207,27 +253,20 @@ private fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
                 Text(
                     text = expense.title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = expense.categoryName ?: "General",
+                    text = "${expense.categoryName ?: "General"} • $dateText",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Text(
-                text = "-${expense.amount} TK",
+                text = "-$currencySymbol ${expense.amount}",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.error,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                fontWeight = FontWeight.Bold
             )
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-                )
-            }
         }
     }
 }

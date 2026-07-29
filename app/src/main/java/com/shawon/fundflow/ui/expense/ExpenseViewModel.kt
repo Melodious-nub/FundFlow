@@ -33,6 +33,7 @@ class ExpenseViewModel @Inject constructor(
     val expenseAmount = MutableStateFlow("")
     val expenseNote = MutableStateFlow("")
     val selectedCategoryId = MutableStateFlow<Long?>(null)
+    val expenseTimestamp = MutableStateFlow(System.currentTimeMillis())
 
     fun loadExpense(id: Long) {
         viewModelScope.launch {
@@ -43,6 +44,7 @@ class ExpenseViewModel @Inject constructor(
                 expenseAmount.value = it.amount.toString()
                 expenseNote.value = it.note ?: ""
                 selectedCategoryId.value = it.categoryId
+                expenseTimestamp.value = it.timestamp
             }
         }
     }
@@ -52,6 +54,7 @@ class ExpenseViewModel @Inject constructor(
         val amount = expenseAmount.value.toLongOrNull() ?: 0L
         val note = expenseNote.value.takeIf { it.isNotBlank() }
         val categoryId = selectedCategoryId.value
+        val timestamp = expenseTimestamp.value
 
         if (title.isBlank() || amount <= 0) return
 
@@ -64,7 +67,7 @@ class ExpenseViewModel @Inject constructor(
                     categoryId = categoryId,
                     title = title,
                     amount = amount,
-                    timestamp = System.currentTimeMillis(),
+                    timestamp = timestamp,
                     note = note,
                     paymentMethod = "Cash"
                 )
@@ -74,12 +77,9 @@ class ExpenseViewModel @Inject constructor(
         }
     }
 
-    fun deleteExpense() {
-        editingExpenseId?.let { id ->
-            viewModelScope.launch {
-                repository.deleteExpense(id)
-                _navigationEvent.emit(ExpenseNavigation.Back)
-            }
+    fun deleteExpense(id: Long) {
+        viewModelScope.launch {
+            repository.deleteExpense(id)
         }
     }
 }
