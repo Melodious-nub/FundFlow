@@ -1,4 +1,4 @@
-package com.example.fundflow.ui.theme
+package com.shawon.fundflow.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
