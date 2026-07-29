@@ -11,20 +11,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Analytics
-import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -46,9 +40,6 @@ import com.shawon.fundflow.domain.model.Expense
 @Composable
 fun DashboardScreen(
     onNavigateToAddExpense: () -> Unit,
-    onNavigateToHistory: () -> Unit,
-    onNavigateToAnalytics: () -> Unit,
-    onNavigateToSettings: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -69,16 +60,13 @@ fun DashboardScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
-            FloatingActionButton(onClick = onNavigateToAddExpense) {
+            FloatingActionButton(
+                onClick = onNavigateToAddExpense,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Expense")
             }
-        },
-        bottomBar = {
-            DashboardBottomBar(
-                onHistoryClick = onNavigateToHistory,
-                onAnalyticsClick = onNavigateToAnalytics,
-                onSettingsClick = onNavigateToSettings
-            )
         }
     ) { innerPadding ->
         Box(
@@ -105,40 +93,6 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun DashboardBottomBar(
-    onHistoryClick: () -> Unit,
-    onAnalyticsClick: () -> Unit,
-    onSettingsClick: () -> Unit
-) {
-    NavigationBar {
-        NavigationBarItem(
-            selected = true,
-            onClick = { /* Already on Dashboard */ },
-            icon = { Icon(Icons.Default.Dashboard, contentDescription = null) },
-            label = { Text("Home") }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = onHistoryClick,
-            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) },
-            label = { Text("History") }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = onAnalyticsClick,
-            icon = { Icon(Icons.Default.Analytics, contentDescription = null) },
-            label = { Text("Analytics") }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = onSettingsClick,
-            icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-            label = { Text("Settings") }
-        )
-    }
-}
-
-@Composable
 private fun DashboardContent(
     state: DashboardUiState.Success,
     onDeleteExpense: (Expense) -> Unit
@@ -150,33 +104,48 @@ private fun DashboardContent(
     ) {
         item {
             Text(
-                text = "Welcome Back!",
-                style = MaterialTheme.typography.titleLarge
+                text = "Dashboard",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = state.cycle.name,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
         item {
             FundFlowCard(modifier = Modifier.fillMaxWidth()) {
                 Text(text = "Current Balance", style = MaterialTheme.typography.labelMedium)
                 Text(
-                    text = "$${state.currentBalance}",
+                    text = "${state.currentBalance} TK",
                     style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = "Remaining Days", style = MaterialTheme.typography.labelSmall)
-                        Text(text = "${state.remainingDays}", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            text = "${state.remainingDays}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                        )
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = "Safe Spending", style = MaterialTheme.typography.labelSmall)
-                        Text(text = "$${state.dailySafeSpending}", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            text = "${state.dailySafeSpending} TK",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                        )
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
         item {
@@ -186,20 +155,43 @@ private fun DashboardContent(
                 LinearProgressIndicator(
                     progress = { state.progress },
                     modifier = Modifier.fillMaxWidth().height(12.dp),
-                    strokeCap = StrokeCap.Round
+                    strokeCap = StrokeCap.Round,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "${(state.progress * 100).toInt()}% spent",
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.align(Alignment.End)
                 )
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
         }
 
         item {
-            Text(text = "Recent Expenses", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Recent Expenses",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(12.dp))
         }
 
-        items(state.recentExpenses) { expense ->
-            ExpenseItem(expense, onDelete = { onDeleteExpense(expense) })
-            Spacer(modifier = Modifier.height(8.dp))
+        if (state.recentExpenses.isEmpty()) {
+            item {
+                Text(
+                    text = "No expenses yet.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+            }
+        } else {
+            items(state.recentExpenses) { expense ->
+                ExpenseItem(expense, onDelete = { onDeleteExpense(expense) })
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
     }
 }
@@ -212,19 +204,29 @@ private fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = expense.title, style = MaterialTheme.typography.bodyLarge)
                 Text(
-                    text = "Category: ${expense.categoryName ?: "General"}",
-                    style = MaterialTheme.typography.labelSmall
+                    text = expense.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                )
+                Text(
+                    text = expense.categoryName ?: "General",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Text(
-                text = "-$${expense.amount}",
+                text = "-${expense.amount} TK",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.error
+                color = MaterialTheme.colorScheme.error,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
             )
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                )
             }
         }
     }

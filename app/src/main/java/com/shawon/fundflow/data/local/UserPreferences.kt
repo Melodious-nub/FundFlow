@@ -36,7 +36,7 @@ class UserPreferences @Inject constructor(
 
     val currencyCode: Flow<String> = context.dataStore.data
         .map { preferences ->
-            preferences[CURRENCY_CODE] ?: "USD"
+            preferences[CURRENCY_CODE] ?: "TK"
         }
 
     suspend fun setCurrencyCode(code: String) {
