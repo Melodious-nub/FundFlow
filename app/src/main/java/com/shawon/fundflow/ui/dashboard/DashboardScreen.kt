@@ -10,22 +10,36 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.LockClock
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
@@ -47,7 +61,11 @@ fun DashboardScreen(
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val cycles by viewModel.allCycles.collectAsState()
     val currencyCode by settingsViewModel.currencyCode.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    var expanded by remember { mutableStateOf(false) }
 
     val currencySymbol = remember(currencyCode) {
         when(currencyCode) {
@@ -82,11 +100,57 @@ fun DashboardScreen(
                 }
             }
             is DashboardUiState.Success -> {
-                DashboardContent(state, currencySymbol)
+                Column {
+                    // Cycle Selector Header
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            OutlinedCard(
+                                onClick = { expanded = true },
+                                shape = MaterialTheme.shapes.small
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(text = state.cycle.name, style = MaterialTheme.typography.labelLarge)
+                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                                }
+                            }
+                            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                cycles.forEach { cycle ->
+                                    DropdownMenuItem(
+                                        text = { Text(cycle.name + if (!cycle.isClosed) " (Active)" else "") },
+                                        onClick = {
+                                            viewModel.selectCycle(cycle.id)
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        
+                        if (!state.cycle.isClosed) {
+                            TextButton(onClick = { viewModel.closeCycle(state.cycle.id) }) {
+                                Icon(Icons.Default.LockClock, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("End Cycle")
+                            }
+                        }
+                    }
+                    
+                    DashboardContent(state, currencySymbol, onNavigateToBudgetSetup)
+                }
             }
         }
 
-        if (uiState is DashboardUiState.Success) {
+        if (uiState is DashboardUiState.Success && !(uiState as DashboardUiState.Success).cycle.isClosed) {
             FloatingActionButton(
                 onClick = onNavigateToAddExpense,
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -104,7 +168,8 @@ fun DashboardScreen(
 @Composable
 private fun DashboardContent(
     state: DashboardUiState.Success,
-    currencySymbol: String
+    currencySymbol: String,
+    onNavigateToBudgetSetup: () -> Unit
 ) {
     val today = remember { SimpleDateFormat("EEEE, dd MMMM", Locale.getDefault()).format(Date()) }
     val cycleDateFormatter = remember { SimpleDateFormat("dd MMM", Locale.getDefault()) }
@@ -116,7 +181,6 @@ private fun DashboardContent(
             .padding(horizontal = 16.dp)
     ) {
         item {
-            Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = today,
                 style = MaterialTheme.typography.labelLarge,
@@ -129,6 +193,33 @@ private fun DashboardContent(
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        if (state.isExpired && !state.cycle.isClosed) {
+            item {
+                FundFlowCard(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Cycle Period Ended",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = "Your budget cycle expired on ${cycleDateFormatter.format(Date(state.cycle.endDate))}. End this cycle to start a new one.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = onNavigateToBudgetSetup,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Start New Cycle")
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
 
         item {
@@ -179,7 +270,7 @@ private fun DashboardContent(
             FundFlowCard(modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Cycle: ${state.cycle.name}",
+                        text = "Range",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f)
@@ -211,7 +302,7 @@ private fun DashboardContent(
 
         item {
             Text(
-                text = "Recent Expenses",
+                text = "Cycle Expenses",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -221,7 +312,7 @@ private fun DashboardContent(
         if (state.recentExpenses.isEmpty()) {
             item {
                 Text(
-                    text = "No expenses yet.",
+                    text = "No expenses recorded in this cycle.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 16.dp)

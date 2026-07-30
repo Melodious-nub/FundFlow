@@ -8,9 +8,12 @@ import com.shawon.fundflow.domain.repository.BudgetRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -24,41 +27,45 @@ class DashboardViewModel @Inject constructor(
     private val repository: BudgetRepository
 ) : ViewModel() {
 
-    val uiState: StateFlow<DashboardUiState> = repository.getActiveCycle()
-        .flatMapLatest { cycle ->
-            if (cycle == null) {
-                flowOf(DashboardUiState.NoActiveCycle)
-            } else {
-                repository.getExpensesForCycle(cycle.id).map { expenses ->
-                    calculateDashboardData(cycle, expenses)
-                }
+    private val _selectedCycleId = MutableStateFlow<Long?>(null)
+    val selectedCycleId = _selectedCycleId.asStateFlow()
+
+    val allCycles: StateFlow<List<BudgetCycle>> = repository.getAllCycles()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val uiState: StateFlow<DashboardUiState> = combine(
+        repository.getActiveCycle(),
+        _selectedCycleId
+    ) { active, selectedId ->
+        selectedId ?: active?.id
+    }.flatMapLatest { cycleId ->
+        if (cycleId == null) {
+            flowOf(DashboardUiState.NoActiveCycle)
+        } else {
+            combine(
+                repository.getAllCycles().map { cycles -> cycles.find { it.id == cycleId } },
+                repository.getExpensesForCycle(cycleId)
+            ) { cycle, expenses ->
+                if (cycle == null) DashboardUiState.NoActiveCycle
+                else calculateDashboardData(cycle, expenses)
             }
         }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = DashboardUiState.Loading
-        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = DashboardUiState.Loading
+    )
 
     private val _snackbarEvent = MutableSharedFlow<String>()
     val snackbarEvent = _snackbarEvent.asSharedFlow()
 
-    private var lastDeletedExpense: Expense? = null
-
-    fun deleteExpense(expense: Expense) {
-        viewModelScope.launch {
-            lastDeletedExpense = expense
-            repository.deleteExpense(expense.id)
-            _snackbarEvent.emit("Expense deleted")
-        }
+    fun selectCycle(id: Long) {
+        _selectedCycleId.value = id
     }
 
-    fun undoDelete() {
-        lastDeletedExpense?.let { expense ->
-            viewModelScope.launch {
-                repository.addExpense(expense)
-                lastDeletedExpense = null
-            }
+    fun closeCycle(id: Long) {
+        viewModelScope.launch {
+            repository.closeCycle(id)
         }
     }
 
@@ -67,11 +74,12 @@ class DashboardViewModel @Inject constructor(
         val currentBalance = cycle.totalBudget - totalSpent
         
         val now = System.currentTimeMillis()
+        val isExpired = now > cycle.endDate
+        
         val remainingMillis = cycle.endDate - now
-        val remainingDays = (remainingMillis / (24 * 60 * 60 * 1000)).coerceAtLeast(1)
+        val remainingDays = (remainingMillis / (24 * 60 * 60 * 1000)).coerceAtLeast(0)
         
         val dailySafeSpending = if (remainingDays > 0) currentBalance / remainingDays else 0L
-        
         val progress = if (cycle.totalBudget > 0) totalSpent.toFloat() / cycle.totalBudget else 0f
         
         val todayStart = now - (now % (24 * 60 * 60 * 1000))
@@ -84,7 +92,8 @@ class DashboardViewModel @Inject constructor(
             remainingDays = remainingDays,
             dailySafeSpending = dailySafeSpending,
             progress = progress,
-            recentExpenses = expenses.take(20) // Show up to 20 expenses
+            recentExpenses = expenses.take(20),
+            isExpired = isExpired
         )
     }
 }
@@ -99,6 +108,7 @@ sealed interface DashboardUiState {
         val remainingDays: Long,
         val dailySafeSpending: Long,
         val progress: Float,
-        val recentExpenses: List<Expense>
+        val recentExpenses: List<Expense>,
+        val isExpired: Boolean
     ) : DashboardUiState
 }

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,6 +31,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -58,6 +60,9 @@ fun BudgetSetupScreen(
     var days by remember { mutableStateOf("30") }
     var startDate by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var showDatePicker by remember { mutableStateOf(false) }
+    
+    val previousRemaining by viewModel.previousCycleRemaining.collectAsState()
+    var applyCarryForward by remember { mutableStateOf(true) }
 
     val dateState = rememberDatePickerState(initialSelectedDateMillis = startDate)
     val formatter = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
@@ -104,12 +109,12 @@ fun BudgetSetupScreen(
         Spacer(modifier = Modifier.height(32.dp))
         
         Text(
-            text = "Initial Setup",
+            text = "Budget Setup",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = "Define your first budget cycle",
+            text = "Define your spending period",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -179,6 +184,32 @@ fun BudgetSetupScreen(
             )
         }
 
+        if (previousRemaining != null) {
+            Spacer(modifier = Modifier.height(24.dp))
+            FundFlowCard(modifier = Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = applyCarryForward,
+                        onCheckedChange = { applyCarryForward = it }
+                    )
+                    Column {
+                        Text(
+                            text = "Carry Forward Balance",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (previousRemaining!! >= 0) 
+                                "Add ৳${previousRemaining} to this cycle" 
+                            else "Deduct debt ৳${kotlin.math.abs(previousRemaining!!)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
@@ -194,7 +225,8 @@ fun BudgetSetupScreen(
                     name = name,
                     startDate = startDate,
                     endDate = end,
-                    amount = amountLong
+                    amount = amountLong,
+                    carryForward = if (applyCarryForward) (previousRemaining ?: 0L) else 0L
                 )
             },
             modifier = Modifier

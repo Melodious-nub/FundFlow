@@ -15,17 +15,22 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -58,10 +63,13 @@ fun HistoryScreen(
 ) {
     val expenses by viewModel.expenses.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val cycles by viewModel.allCycles.collectAsState()
     val currencyCode by settingsViewModel.currencyCode.collectAsState()
     
     var selectedExpense by remember { mutableStateOf<Expense?>(null) }
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
+    var expanded by remember { mutableStateOf(false) }
+    var selectedCycleName by remember { mutableStateOf("Current Cycle") }
     
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -73,6 +81,12 @@ fun HistoryScreen(
             "GBP" -> "£"
             "INR" -> "₹"
             else -> "৳"
+        }
+    }
+
+    LaunchedEffect(cycles) {
+        cycles.find { !it.isClosed }?.let {
+            selectedCycleName = it.name
         }
     }
 
@@ -95,17 +109,46 @@ fun HistoryScreen(
                 .padding(horizontal = 16.dp)
         ) {
             Spacer(modifier = Modifier.height(16.dp))
+            
+            // Cycle Selector Header
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "History",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
-                IconButton(onClick = { /* TODO: Open Filter Dialog */ }) {
-                    Icon(Icons.Default.FilterList, contentDescription = "Filter")
+                Box(modifier = Modifier.weight(1f)) {
+                    OutlinedCard(
+                        onClick = { expanded = true },
+                        shape = MaterialTheme.shapes.small
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = selectedCycleName, style = MaterialTheme.typography.labelLarge)
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                        }
+                    }
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        cycles.forEach { cycle ->
+                            DropdownMenuItem(
+                                text = { Text(cycle.name) },
+                                onClick = {
+                                    selectedCycleName = cycle.name
+                                    viewModel.selectCycle(cycle.id)
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
                 }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Text(
+                text = "History",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
             
             Spacer(modifier = Modifier.height(12.dp))
             
