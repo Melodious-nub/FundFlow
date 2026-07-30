@@ -26,17 +26,24 @@ class AnalyticsViewModel @Inject constructor(
     val allCycles: StateFlow<List<BudgetCycle>> = repository.getAllCycles()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    private val allCategories = repository.getAllCategories()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val analyticsState: StateFlow<AnalyticsUiState> = combine(
         repository.getActiveCycle(),
-        selectedCycleId
-    ) { active, selectedId ->
-        selectedId ?: active?.id
-    }.flatMapLatest { cycleId ->
-        if (cycleId == null) flowOf(AnalyticsUiState.NoData)
-        else repository.getExpensesForCycle(cycleId).map { expenses ->
+        selectedCycleId,
+        allCategories,
+        allCycles
+    ) { active, selectedId, categories, cycles ->
+        val targetId = selectedId ?: active?.id ?: cycles.firstOrNull()?.id
+        val targetCycle = cycles.find { it.id == targetId }
+        DataModel(targetId, categories, targetCycle)
+    }.flatMapLatest { model ->
+        if (model.targetId == null) flowOf(AnalyticsUiState.NoData)
+        else repository.getExpensesForCycle(model.targetId).map { expenses ->
             if (expenses.isEmpty()) AnalyticsUiState.NoData
-            else processAnalytics(expenses)
+            else processAnalytics(expenses, model.categories, model.targetCycle?.name ?: "Unknown")
         }
     }.stateIn(
         scope = viewModelScope,
@@ -44,36 +51,75 @@ class AnalyticsViewModel @Inject constructor(
         initialValue = AnalyticsUiState.Loading
     )
 
+    private data class DataModel(
+        val targetId: Long?,
+        val categories: List<com.shawon.fundflow.data.local.entities.CategoryEntity>,
+        val targetCycle: BudgetCycle?
+    )
+
     fun onCycleSelected(id: Long) {
         selectedCycleId.value = id
     }
 
-    private fun processAnalytics(expenses: List<Expense>): AnalyticsUiState.Success {
-        val categoryBreakdown = expenses.groupBy { it.categoryId ?: -1L }
+    private fun processAnalytics(
+        expenses: List<Expense>,
+        categories: List<com.shawon.fundflow.data.local.entities.CategoryEntity>,
+        cycleName: String
+    ): AnalyticsUiState.Success {
+        val categoryMap = categories.associateBy { it.id }
+        
+        val categoryBreakdownMap = expenses.groupBy { it.categoryId ?: -1L }
             .mapValues { entry -> entry.value.sumOf { it.amount } }
         
-        val weeklyData = expenses.groupBy { 
-            val date = java.util.Calendar.getInstance().apply { timeInMillis = it.timestamp }
-            date.get(java.util.Calendar.DAY_OF_WEEK)
-        }.mapValues { it.value.sumOf { exp -> exp.amount } }
+        val totalSpent = expenses.sumOf { it.amount }
         
-        val sortedWeeklyData = mutableMapOf<Int, Long>()
-        for (i in 1..7) {
-            sortedWeeklyData[i] = weeklyData[i] ?: 0L
-        }
+        val categoryBreakdown = categoryBreakdownMap.map { (catId, amount) ->
+            val category = categoryMap[catId]
+            CategoryAnalytics(
+                categoryId = catId,
+                categoryName = category?.name ?: "General",
+                amount = amount,
+                percentage = if (totalSpent > 0) amount.toFloat() / totalSpent else 0f,
+                color = category?.colorHex ?: "#9E9E9E"
+            )
+        }.sortedByDescending { it.amount }
+
+        val dailyTrend = expenses.groupBy { 
+            val cal = java.util.Calendar.getInstance().apply { 
+                timeInMillis = it.timestamp
+                set(java.util.Calendar.HOUR_OF_DAY, 0)
+                set(java.util.Calendar.MINUTE, 0)
+                set(java.util.Calendar.SECOND, 0)
+                set(java.util.Calendar.MILLISECOND, 0)
+            }
+            cal.timeInMillis
+        }.mapValues { it.value.sumOf { exp -> exp.amount } }
+        .toSortedMap()
 
         return AnalyticsUiState.Success(
+            cycleName = cycleName,
+            totalSpent = totalSpent,
             categoryBreakdown = categoryBreakdown,
-            weeklyData = sortedWeeklyData
+            dailyTrend = dailyTrend
         )
     }
 }
+
+data class CategoryAnalytics(
+    val categoryId: Long,
+    val categoryName: String,
+    val amount: Long,
+    val percentage: Float,
+    val color: String
+)
 
 sealed interface AnalyticsUiState {
     data object Loading : AnalyticsUiState
     data object NoData : AnalyticsUiState
     data class Success(
-        val categoryBreakdown: Map<Long, Long>,
-        val weeklyData: Map<Int, Long>
+        val cycleName: String,
+        val totalSpent: Long,
+        val categoryBreakdown: List<CategoryAnalytics>,
+        val dailyTrend: Map<Long, Long>
     ) : AnalyticsUiState
 }

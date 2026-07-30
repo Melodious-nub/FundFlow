@@ -1,5 +1,6 @@
 package com.shawon.fundflow.ui.analytics
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,15 +9,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
@@ -29,16 +37,28 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.graphics.toColorInt
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottomAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStartAxis
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
+import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import com.shawon.fundflow.core.designsystem.FundFlowCard
 import com.shawon.fundflow.ui.settings.SettingsViewModel
 import androidx.compose.ui.text.font.FontWeight
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun AnalyticsScreen(
@@ -48,10 +68,10 @@ fun AnalyticsScreen(
     val state by viewModel.analyticsState.collectAsState()
     val cycles by viewModel.allCycles.collectAsState()
     val currencyCode by settingsViewModel.currencyCode.collectAsState()
-    val modelProducer = remember { CartesianChartModelProducer() }
+    val lineModelProducer = remember { CartesianChartModelProducer() }
+    val columnModelProducer = remember { CartesianChartModelProducer() }
     
     var expanded by remember { mutableStateOf(false) }
-    var selectedCycleName by remember { mutableStateOf("Select Cycle") }
 
     val currencySymbol = remember(currencyCode) {
         when(currencyCode) {
@@ -61,15 +81,6 @@ fun AnalyticsScreen(
             "GBP" -> "£"
             "INR" -> "₹"
             else -> "৳"
-        }
-    }
-
-    // Update selected name when cycles load or change
-    LaunchedEffect(cycles) {
-        if (selectedCycleName == "Select Cycle") {
-            cycles.find { !it.isClosed }?.let {
-                selectedCycleName = it.name
-            }
         }
     }
 
@@ -108,7 +119,7 @@ fun AnalyticsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = selectedCycleName,
+                            text = (state as? AnalyticsUiState.Success)?.cycleName ?: "Select Cycle",
                             modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.bodyLarge
                         )
@@ -116,94 +127,111 @@ fun AnalyticsScreen(
                     }
                 }
 
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                    modifier = Modifier.fillMaxWidth(0.9f)
-                ) {
-                    cycles.forEach { cycle ->
-                        DropdownMenuItem(
-                            text = { Text(cycle.name) },
-                            onClick = {
-                                selectedCycleName = cycle.name
-                                viewModel.onCycleSelected(cycle.id)
-                                expanded = false
-                            }
-                        )
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.fillMaxWidth(0.9f)
+                    ) {
+                        cycles.forEach { cycle ->
+                            DropdownMenuItem(
+                                text = { Text(cycle.name) },
+                                onClick = {
+                                    viewModel.onCycleSelected(cycle.id)
+                                    expanded = false
+                                }
+                            )
+                        }
                     }
-                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
             
             when (val s = state) {
                 is AnalyticsUiState.Success -> {
-                    LaunchedEffect(s.weeklyData) {
-                        if (s.weeklyData.isNotEmpty()) {
-                            modelProducer.runTransaction {
+                    LaunchedEffect(s.dailyTrend) {
+                        if (s.dailyTrend.isNotEmpty()) {
+                            lineModelProducer.runTransaction {
+                                lineSeries {
+                                    series(s.dailyTrend.values.map { it.toFloat() })
+                                }
+                            }
+                            columnModelProducer.runTransaction {
                                 columnSeries {
-                                    series(s.weeklyData.values.map { it.toFloat() })
+                                    series(s.dailyTrend.values.map { it.toFloat() })
                                 }
                             }
                         }
                     }
 
+                    // Total Spent Summary
                     FundFlowCard(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "Weekly Spending",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(text = "Total Spent", style = MaterialTheme.typography.labelMedium)
+                                Text(
+                                    text = "$currencySymbol ${s.totalSpent}",
+                                    style = MaterialTheme.typography.headlineLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Icon(
+                                Icons.AutoMirrored.Filled.TrendingUp,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                modifier = Modifier.size(64.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Spending Trend
+                    FundFlowCard(modifier = Modifier.fillMaxWidth()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.BarChart, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Daily Spending Trend",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        if (s.weeklyData.values.any { it > 0 }) {
+                        if (s.dailyTrend.isNotEmpty()) {
                             CartesianChartHost(
                                 chart = rememberCartesianChart(
-                                    rememberColumnCartesianLayer(),
+                                    rememberLineCartesianLayer(),
+                                    startAxis = rememberStartAxis(),
+                                    bottomAxis = rememberBottomAxis(),
                                 ),
-                                modelProducer = modelProducer,
+                                modelProducer = lineModelProducer,
                                 modifier = Modifier.fillMaxWidth().height(200.dp)
                             )
                         } else {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().height(200.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "No spending recorded for this cycle",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            NoDataPlaceholder()
                         }
                     }
                     
                     Spacer(modifier = Modifier.height(24.dp))
                     
+                    // Category Breakdown
                     FundFlowCard(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "Category Breakdown",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.PieChart, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Category Breakdown",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                         Spacer(modifier = Modifier.height(16.dp))
-                        s.categoryBreakdown.forEach { (catId, amount) ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = if (catId == -1L) "General" else "Category $catId",
-                                    modifier = Modifier.weight(1f),
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                                Text(
-                                    text = "$currencySymbol $amount",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                        
+                        s.categoryBreakdown.forEach { category ->
+                            CategoryProgressItem(category, currencySymbol)
+                            Spacer(modifier = Modifier.height(12.dp))
                         }
                     }
                 }
@@ -234,5 +262,63 @@ fun AnalyticsScreen(
             
             Spacer(modifier = Modifier.height(80.dp))
         }
+    }
+}
+
+@Composable
+private fun CategoryProgressItem(category: CategoryAnalytics, currencySymbol: String) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .clip(CircleShape)
+                    .background(Color(category.color.toColorInt()))
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = category.categoryName,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = "$currencySymbol ${category.amount}",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        LinearProgressIndicator(
+            progress = { category.percentage },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp),
+            strokeCap = StrokeCap.Round,
+            color = Color(category.color.toColorInt()),
+            trackColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+        Text(
+            text = "${(category.percentage * 100).toInt()}% of total",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.align(Alignment.End)
+        )
+    }
+}
+
+@Composable
+private fun NoDataPlaceholder() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "No spending recorded for this cycle",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

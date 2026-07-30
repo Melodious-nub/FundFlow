@@ -19,6 +19,8 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LockClock
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -66,6 +68,7 @@ fun DashboardScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     
     var expanded by remember { mutableStateOf(false) }
+    var showEndCycleConfirmation by remember { mutableStateOf(false) }
 
     val currencySymbol = remember(currencyCode) {
         when(currencyCode) {
@@ -137,12 +140,40 @@ fun DashboardScreen(
                         }
                         
                         if (!state.cycle.isClosed) {
-                            TextButton(onClick = { viewModel.closeCycle(state.cycle.id) }) {
+                            TextButton(onClick = { showEndCycleConfirmation = true }) {
                                 Icon(Icons.Default.LockClock, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text("End Cycle")
                             }
                         }
+                    }
+
+                    if (showEndCycleConfirmation) {
+                        AlertDialog(
+                            onDismissRequest = { showEndCycleConfirmation = false },
+                            icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                            title = { Text(text = "End Current Cycle?") },
+                            text = {
+                                Text(
+                                    text = "Ending the cycle will lock all expenses for this period. You won't be able to add, edit, or delete expenses in this cycle anymore.\n\nAre you sure you want to proceed?"
+                                )
+                            },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        viewModel.closeCycle(state.cycle.id)
+                                        showEndCycleConfirmation = false
+                                    }
+                                ) {
+                                    Text("End Cycle", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showEndCycleConfirmation = false }) {
+                                    Text("Cancel")
+                                }
+                            }
+                        )
                     }
                     
                     DashboardContent(state, currencySymbol, onNavigateToBudgetSetup)

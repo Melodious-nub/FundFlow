@@ -23,6 +23,9 @@ class BudgetSetupViewModel @Inject constructor(
     private val _previousCycleRemaining = MutableStateFlow<Long?>(null)
     val previousCycleRemaining = _previousCycleRemaining.asStateFlow()
 
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage = _errorMessage.asStateFlow()
+
     init {
         viewModelScope.launch {
             val allCycles = repository.getAllCycles().first()
@@ -44,6 +47,18 @@ class BudgetSetupViewModel @Inject constructor(
         carryForward: Long = 0L
     ) {
         viewModelScope.launch {
+            val allCycles = repository.getAllCycles().first()
+            val hasOverlap = allCycles.any { existing ->
+                // Check if new range overlaps with any existing range
+                // (StartA <= EndB) and (EndA >= StartB)
+                startDate <= existing.endDate && endDate >= existing.startDate
+            }
+
+            if (hasOverlap) {
+                _errorMessage.value = "This cycle overlaps with an existing budget cycle. Please choose different dates."
+                return@launch
+            }
+
             val cycle = com.shawon.fundflow.domain.model.BudgetCycle(
                 id = 0,
                 name = name,
@@ -56,6 +71,10 @@ class BudgetSetupViewModel @Inject constructor(
             repository.createCycle(cycle)
             _navigationEvent.emit(BudgetSetupNavigation.ToDashboard)
         }
+    }
+
+    fun clearError() {
+        _errorMessage.value = null
     }
 }
 

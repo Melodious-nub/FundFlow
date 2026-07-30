@@ -16,6 +16,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -62,6 +64,7 @@ fun BudgetSetupScreen(
     var showDatePicker by remember { mutableStateOf(false) }
     
     val previousRemaining by viewModel.previousCycleRemaining.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
     var applyCarryForward by remember { mutableStateOf(true) }
 
     val dateState = rememberDatePickerState(initialSelectedDateMillis = startDate)
@@ -94,6 +97,20 @@ fun BudgetSetupScreen(
         ) {
             DatePicker(state = dateState)
         }
+    }
+
+    if (errorMessage != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearError() },
+            icon = { Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("Validation Error") },
+            text = { Text(errorMessage!!) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearError() }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 
     Column(
