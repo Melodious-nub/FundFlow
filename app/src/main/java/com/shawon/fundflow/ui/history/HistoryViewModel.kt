@@ -27,6 +27,15 @@ class HistoryViewModel @Inject constructor(
     private val _selectedCycleId = MutableStateFlow<Long?>(null)
     val selectedCycleId = _selectedCycleId.asStateFlow()
 
+    init {
+        // Automatically reset selection when a new cycle is created/becomes active
+        viewModelScope.launch {
+            repository.getActiveCycle().collect { 
+                _selectedCycleId.value = null
+            }
+        }
+    }
+
     val allCycles: StateFlow<List<BudgetCycle>> = repository.getAllCycles()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

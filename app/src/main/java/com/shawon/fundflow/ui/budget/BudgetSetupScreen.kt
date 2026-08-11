@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -15,7 +16,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -25,11 +28,14 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,17 +61,37 @@ import java.util.Locale
 @Composable
 fun BudgetSetupScreen(
     onNavigateToDashboard: () -> Unit,
+    onNavigateBack: (() -> Unit)? = null,
     viewModel: BudgetSetupViewModel = hiltViewModel()
 ) {
-    var name by remember { mutableStateOf("Monthly Budget") }
-    var amount by remember { mutableStateOf("") }
-    var days by remember { mutableStateOf("30") }
-    var startDate by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    val existingCycle by viewModel.existingCycle.collectAsState()
+    val suggestedStartDate by viewModel.suggestedStartDate.collectAsState()
+    
+    var name by remember(existingCycle) { mutableStateOf(existingCycle?.name ?: "Monthly Budget") }
+    var amount by remember(existingCycle) { mutableStateOf(existingCycle?.baseAmount?.toString() ?: "") }
+    
+    var startDate by remember(existingCycle, suggestedStartDate) { 
+        mutableLongStateOf(
+            existingCycle?.startDate ?: suggestedStartDate ?: System.currentTimeMillis()
+        ) 
+    }
+    
+    val initialDuration = remember(existingCycle) {
+        if (existingCycle != null) {
+            val diff = existingCycle!!.endDate - existingCycle!!.startDate
+            (diff / (24 * 60 * 60 * 1000)).toString()
+        } else "30"
+    }
+    var days by remember(existingCycle) { mutableStateOf(initialDuration) }
+    
     var showDatePicker by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
     
     val previousRemaining by viewModel.previousCycleRemaining.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
-    var applyCarryForward by remember { mutableStateOf(true) }
+    var applyCarryForward by remember(existingCycle) { 
+        mutableStateOf(existingCycle?.carryForward != 0L || existingCycle == null) 
+    }
 
     val dateState = rememberDatePickerState(initialSelectedDateMillis = startDate)
     val formatter = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
@@ -99,6 +125,30 @@ fun BudgetSetupScreen(
         }
     }
 
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            icon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("Delete Cycle?") },
+            text = { Text("This will permanently delete this budget cycle and all its associated expenses. This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteCycle()
+                        showDeleteConfirmation = false
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmation = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     if (errorMessage != null) {
         AlertDialog(
             onDismissRequest = { viewModel.clearError() },
@@ -113,154 +163,183 @@ fun BudgetSetupScreen(
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(horizontal = 24.dp)
-            .imePadding()
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
-    ) {
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        Text(
-            text = "Budget Setup",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = "Define your spending period",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        FundFlowCard(modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Cycle Name") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary
+    Scaffold(
+        topBar = {
+            if (onNavigateBack != null) {
+                TopAppBar(
+                    title = {},
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    }
                 )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = amount,
-                onValueChange = { amount = it },
-                label = { Text("Budget Amount (৳)") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                shape = MaterialTheme.shapes.medium,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary
-                )
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = formatter.format(Date(startDate)),
-                onValueChange = {},
-                label = { Text("Start Date") },
-                readOnly = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showDatePicker = true },
-                trailingIcon = {
-                    Icon(Icons.Default.CalendarToday, contentDescription = null)
-                },
-                enabled = false,
-                colors = OutlinedTextFieldDefaults.colors(
-                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                    disabledBorderColor = MaterialTheme.colorScheme.outline,
-                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = days,
-                onValueChange = { days = it },
-                label = { Text("Duration (Days)") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                shape = MaterialTheme.shapes.medium,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary
-                )
-            )
+            }
         }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 24.dp)
+                .imePadding()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = if (existingCycle != null) "Edit Budget Cycle" else "Budget Setup",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = if (existingCycle != null) "Update your spending period" else "Define your spending period",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-        if (previousRemaining != null) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+
             FundFlowCard(modifier = Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = applyCarryForward,
-                        onCheckedChange = { applyCarryForward = it }
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Cycle Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary
                     )
-                    Column {
-                        Text(
-                            text = "Carry Forward Balance",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = { amount = it },
+                    label = { Text("Budget Amount (৳)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = formatter.format(Date(startDate)),
+                    onValueChange = {},
+                    label = { Text("Start Date") },
+                    readOnly = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker = true },
+                    trailingIcon = {
+                        Icon(Icons.Default.CalendarToday, contentDescription = null)
+                    },
+                    enabled = false,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = days,
+                    onValueChange = { days = it },
+                    label = { Text("Duration (Days)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+            }
+
+            if (previousRemaining != null) {
+                Spacer(modifier = Modifier.height(24.dp))
+                FundFlowCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = applyCarryForward,
+                            onCheckedChange = { applyCarryForward = it }
                         )
-                        Text(
-                            text = if (previousRemaining!! >= 0) 
-                                "Add ৳${previousRemaining} to this cycle" 
-                            else "Deduct debt ৳${kotlin.math.abs(previousRemaining!!)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Column {
+                            Text(
+                                text = "Carry Forward Balance",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = if (previousRemaining!! >= 0) 
+                                    "Add ৳${previousRemaining} to this cycle" 
+                                else "Deduct debt ৳${kotlin.math.abs(previousRemaining!!)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-        Button(
-            onClick = {
-                val amountLong = amount.toLongOrNull() ?: 0L
-                val durationDays = days.toIntOrNull() ?: 30
-                val calendar = Calendar.getInstance()
-                calendar.timeInMillis = startDate
-                calendar.add(Calendar.DAY_OF_YEAR, durationDays)
-                val end = calendar.timeInMillis
+            Button(
+                onClick = {
+                    val amountLong = amount.toLongOrNull() ?: 0L
+                    val durationDays = days.toIntOrNull() ?: 30
+                    val calendar = Calendar.getInstance()
+                    calendar.timeInMillis = startDate
+                    calendar.add(Calendar.DAY_OF_YEAR, durationDays)
+                    val end = calendar.timeInMillis
 
-                viewModel.saveBudgetCycle(
-                    name = name,
-                    startDate = startDate,
-                    endDate = end,
-                    amount = amountLong,
-                    carryForward = if (applyCarryForward) (previousRemaining ?: 0L) else 0L
+                    viewModel.saveBudgetCycle(
+                        name = name,
+                        startDate = startDate,
+                        endDate = end,
+                        amount = amountLong,
+                        carryForward = if (applyCarryForward) (previousRemaining ?: 0L) else 0L
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.extraLarge,
+                enabled = amount.isNotBlank() && name.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = MaterialTheme.shapes.extraLarge,
-            enabled = amount.isNotBlank() && name.isNotBlank(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
-            )
-        ) {
-            Text(
-                text = "Complete Setup",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            ) {
+                Text(
+                    text = if (existingCycle != null) "Update Cycle" else "Complete Setup",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            if (existingCycle != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                TextButton(
+                    onClick = { showDeleteConfirmation = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Delete Cycle")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
-        Spacer(modifier = Modifier.height(32.dp))
     }
 }

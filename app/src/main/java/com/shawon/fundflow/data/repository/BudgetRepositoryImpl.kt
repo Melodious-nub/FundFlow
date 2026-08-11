@@ -8,6 +8,7 @@ import com.shawon.fundflow.domain.model.BudgetCycle
 import com.shawon.fundflow.domain.model.Expense
 import com.shawon.fundflow.domain.repository.BudgetRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,6 +24,10 @@ class BudgetRepositoryImpl @Inject constructor(
 
     override fun getAllCycles(): Flow<List<BudgetCycle>> {
         return budgetDao.getAllCycles().map { entities -> entities.map { it.toDomain() } }
+    }
+
+    override suspend fun getCycleById(cycleId: Long): BudgetCycle? {
+        return budgetDao.getCycleById(cycleId)?.toDomain()
     }
 
     override fun getExpensesForCycle(cycleId: Long): Flow<List<Expense>> {
@@ -51,6 +56,36 @@ class BudgetRepositoryImpl @Inject constructor(
         budgetDao.closeCycle(cycleId)
     }
 
+    override suspend fun closeAllActiveCycles() {
+        budgetDao.closeAllActiveCycles()
+    }
+
+    override suspend fun deleteCycle(cycleId: Long) {
+        budgetDao.deleteCycle(cycleId)
+    }
+
+    override fun getAllExpenses(): Flow<List<ExpenseEntity>> {
+        return budgetDao.getAllExpenses()
+    }
+
+    override suspend fun insertExpenses(expenses: List<ExpenseEntity>) {
+        budgetDao.insertExpenses(expenses)
+    }
+
+    override suspend fun insertCycles(cycles: List<BudgetCycleEntity>) {
+        budgetDao.insertCycles(cycles)
+    }
+
+    override suspend fun deleteAllData() {
+        budgetDao.deleteAllExpenses()
+        budgetDao.deleteAllCycles()
+        budgetDao.deleteAllCategories()
+    }
+
+    override suspend fun insertCategories(categories: List<CategoryEntity>) {
+        budgetDao.insertCategories(categories)
+    }
+
     override fun getAllCategories(): Flow<List<CategoryEntity>> {
         return budgetDao.getAllCategories()
     }
@@ -64,6 +99,9 @@ class BudgetRepositoryImpl @Inject constructor(
     }
 
     override suspend fun seedDefaultCategories() {
+        val existing = budgetDao.getAllCategories().first()
+        if (existing.isNotEmpty()) return
+
         val defaults = listOf(
             CategoryEntity(name = "Food", iconRes = 0, colorHex = "#FF5722", orderIndex = 0),
             CategoryEntity(name = "Transport", iconRes = 0, colorHex = "#2196F3", orderIndex = 1),

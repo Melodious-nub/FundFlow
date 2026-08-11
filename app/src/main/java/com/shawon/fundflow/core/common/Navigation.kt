@@ -10,7 +10,7 @@ sealed interface Screen {
     data object Onboarding : Screen
 
     @Serializable
-    data object BudgetSetup : Screen
+    data class BudgetSetup(val cycleId: Long? = null) : Screen
 
     @Serializable
     data object Dashboard : Screen
@@ -25,6 +25,18 @@ sealed interface Screen {
 
     @Serializable
     data object History : Screen
+
+    @Serializable
+    data object CycleManagement : Screen
+
+    @Serializable
+    data class Backup(val isInitialSetup: Boolean = false) : Screen
+
+    @Serializable
+    data class LocalBackup(val isInitialSetup: Boolean = false) : Screen
+
+    @Serializable
+    data class CloudBackup(val isInitialSetup: Boolean = false) : Screen
 
     @Serializable
     data object Settings : Screen

@@ -18,6 +18,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
@@ -64,6 +66,7 @@ fun ExpenseScreen(
     val selectedCategoryId by viewModel.selectedCategoryId.collectAsState()
     val categories by viewModel.categories.collectAsState()
     val timestamp by viewModel.expenseTimestamp.collectAsState()
+    val showDeadlineWarning by viewModel.showDeadlineWarning.collectAsState()
     
     var showDatePicker by remember { mutableStateOf(false) }
     val dateState = rememberDatePickerState(initialSelectedDateMillis = timestamp)
@@ -96,6 +99,30 @@ fun ExpenseScreen(
         ) {
             DatePicker(state = dateState)
         }
+    }
+
+    if (showDeadlineWarning) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissWarning() },
+            icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("Budget Cycle Expired") },
+            text = { 
+                Text("The current date is past your budget cycle deadline. You can still add this expense to the current cycle, or cancel to start a new cycle first.") 
+            },
+            confirmButton = {
+                TextButton(onClick = { 
+                    viewModel.saveExpense(force = true)
+                    viewModel.dismissWarning()
+                }) {
+                    Text("Add Anyway", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissWarning() }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Scaffold(

@@ -14,10 +14,13 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun FundFlowCard(
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
+        onClick = onClick ?: {},
         modifier = modifier,
+        enabled = onClick != null,
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)

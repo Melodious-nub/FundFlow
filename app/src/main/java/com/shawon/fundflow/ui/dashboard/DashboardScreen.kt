@@ -34,6 +34,7 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -58,7 +59,7 @@ import java.util.Locale
 @Composable
 fun DashboardScreen(
     onNavigateToAddExpense: () -> Unit,
-    onNavigateToBudgetSetup: () -> Unit,
+    onNavigateToBudgetSetup: (Long?) -> Unit,
     viewModel: DashboardViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -97,7 +98,7 @@ fun DashboardScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = onNavigateToBudgetSetup) {
+                    Button(onClick = { onNavigateToBudgetSetup(null) }) {
                         Text("Create Budget Cycle")
                     }
                 }
@@ -138,7 +139,7 @@ fun DashboardScreen(
                                 }
                             }
                         }
-                        
+
                         if (!state.cycle.isClosed) {
                             TextButton(onClick = { showEndCycleConfirmation = true }) {
                                 Icon(Icons.Default.LockClock, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -176,7 +177,12 @@ fun DashboardScreen(
                         )
                     }
                     
-                    DashboardContent(state, currencySymbol, onNavigateToBudgetSetup)
+                    DashboardContent(
+                        state = state,
+                        totalCycles = cycles.size,
+                        currencySymbol = currencySymbol,
+                        onNavigateToBudgetSetup = { onNavigateToBudgetSetup(null) }
+                    )
                 }
             }
         }
@@ -199,6 +205,7 @@ fun DashboardScreen(
 @Composable
 private fun DashboardContent(
     state: DashboardUiState.Success,
+    totalCycles: Int,
     currencySymbol: String,
     onNavigateToBudgetSetup: () -> Unit
 ) {
@@ -264,6 +271,19 @@ private fun DashboardContent(
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            shape = MaterialTheme.shapes.small
+                        ) {
+                            Text(
+                                text = "Total $totalCycles Cycles",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                     Icon(
                         Icons.Default.CalendarMonth,

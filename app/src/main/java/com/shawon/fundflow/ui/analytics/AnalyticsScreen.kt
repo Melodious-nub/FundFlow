@@ -19,7 +19,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -118,8 +120,13 @@ fun AnalyticsScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        val displayName = when (val s = state) {
+                            is AnalyticsUiState.Success -> s.cycleName
+                            is AnalyticsUiState.NoData -> s.cycleName.ifEmpty { "Select Cycle" }
+                            else -> "Select Cycle"
+                        }
                         Text(
-                            text = (state as? AnalyticsUiState.Success)?.cycleName ?: "Select Cycle",
+                            text = displayName,
                             modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.bodyLarge
                         )
@@ -163,24 +170,50 @@ fun AnalyticsScreen(
                         }
                     }
 
-                    // Total Spent Summary
-                    FundFlowCard(modifier = Modifier.fillMaxWidth()) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(text = "Total Spent", style = MaterialTheme.typography.labelMedium)
-                                Text(
-                                    text = "$currencySymbol ${s.totalSpent}",
-                                    style = MaterialTheme.typography.headlineLarge,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Icon(
-                                Icons.AutoMirrored.Filled.TrendingUp,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                modifier = Modifier.size(64.dp)
+                    // Stats Cards Row
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        FundFlowCard(modifier = Modifier.weight(1f)) {
+                            Text(text = "Total Spent", style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                text = "$currencySymbol ${s.totalSpent}",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
                             )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        FundFlowCard(modifier = Modifier.weight(1f)) {
+                            Text(text = "Avg / Day", style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                text = "$currencySymbol ${s.averagePerDay}",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.secondary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    if (s.topSpendingDay != null) {
+                        FundFlowCard(modifier = Modifier.fillMaxWidth()) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.QueryStats, 
+                                    contentDescription = null, 
+                                    tint = MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(text = "Peak Spending Day", style = MaterialTheme.typography.labelSmall)
+                                    Text(
+                                        text = "${s.topSpendingDay.first}: $currencySymbol ${s.topSpendingDay.second}",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -192,7 +225,37 @@ fun AnalyticsScreen(
                             Icon(Icons.Default.BarChart, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Daily Spending Trend",
+                                text = "Daily Spending",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        if (s.dailyTrend.isNotEmpty()) {
+                            CartesianChartHost(
+                                chart = rememberCartesianChart(
+                                    rememberColumnCartesianLayer(),
+                                    startAxis = rememberStartAxis(),
+                                    bottomAxis = rememberBottomAxis(),
+                                ),
+                                modelProducer = columnModelProducer,
+                                modifier = Modifier.fillMaxWidth().height(200.dp)
+                            )
+                        } else {
+                            NoDataPlaceholder()
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Line Chart for Trend
+                    FundFlowCard(modifier = Modifier.fillMaxWidth()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Cumulative Trend",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
@@ -207,13 +270,13 @@ fun AnalyticsScreen(
                                     bottomAxis = rememberBottomAxis(),
                                 ),
                                 modelProducer = lineModelProducer,
-                                modifier = Modifier.fillMaxWidth().height(200.dp)
+                                modifier = Modifier.fillMaxWidth().height(150.dp)
                             )
                         } else {
                             NoDataPlaceholder()
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(24.dp))
                     
                     // Category Breakdown
@@ -250,7 +313,7 @@ fun AnalyticsScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "No expenses found for this cycle.",
+                                text = if (s.cycleName.isEmpty()) "No cycle selected." else "No expenses found for '${s.cycleName}'.",
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center

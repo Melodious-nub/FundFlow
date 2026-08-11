@@ -44,6 +44,33 @@ interface BudgetDao {
     @Query("SELECT * FROM budget_cycles ORDER BY startDate DESC")
     fun getAllCycles(): Flow<List<BudgetCycleEntity>>
 
+    @Query("SELECT * FROM budget_cycles WHERE id = :cycleId")
+    suspend fun getCycleById(cycleId: Long): BudgetCycleEntity?
+
     @Query("UPDATE budget_cycles SET isClosed = 1 WHERE id = :cycleId")
     suspend fun closeCycle(cycleId: Long)
+
+    @Query("UPDATE budget_cycles SET isClosed = 1 WHERE isClosed = 0")
+    suspend fun closeAllActiveCycles()
+
+    @Query("DELETE FROM budget_cycles WHERE id = :cycleId")
+    suspend fun deleteCycle(cycleId: Long)
+
+    @Query("SELECT * FROM expenses ORDER BY timestamp DESC")
+    fun getAllExpenses(): Flow<List<ExpenseEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertExpenses(expenses: List<ExpenseEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCycles(cycles: List<BudgetCycleEntity>)
+
+    @Query("DELETE FROM budget_cycles")
+    suspend fun deleteAllCycles()
+
+    @Query("DELETE FROM expenses")
+    suspend fun deleteAllExpenses()
+
+    @Query("DELETE FROM categories")
+    suspend fun deleteAllCategories()
 }

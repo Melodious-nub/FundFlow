@@ -16,8 +16,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -45,6 +47,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     onNavigateToAbout: () -> Unit,
+    onNavigateToCycleManagement: () -> Unit,
+    onNavigateToBackup: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val currency by viewModel.currencyCode.collectAsState()
@@ -80,6 +84,24 @@ fun SettingsScreen(
                 subtitle = "Active: $currency",
                 icon = Icons.Default.Payments,
                 onClick = { showCurrencySheet = true }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SettingItem(
+                title = "Manage Cycles",
+                subtitle = "View, edit or delete budget cycles",
+                icon = Icons.Default.History,
+                onClick = onNavigateToCycleManagement
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SettingItem(
+                title = "Backup & Restore",
+                subtitle = "Local backup of your data",
+                icon = Icons.Default.Storage,
+                onClick = onNavigateToBackup
             )
 
             Spacer(modifier = Modifier.height(24.dp))

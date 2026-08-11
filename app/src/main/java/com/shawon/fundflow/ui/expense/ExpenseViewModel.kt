@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -35,6 +36,9 @@ class ExpenseViewModel @Inject constructor(
     val selectedCategoryId = MutableStateFlow<Long?>(null)
     val expenseTimestamp = MutableStateFlow(System.currentTimeMillis())
 
+    private val _showDeadlineWarning = MutableStateFlow(false)
+    val showDeadlineWarning = _showDeadlineWarning.asStateFlow()
+
     fun loadExpense(id: Long) {
         viewModelScope.launch {
             editingExpenseId = id
@@ -49,7 +53,7 @@ class ExpenseViewModel @Inject constructor(
         }
     }
 
-    fun saveExpense() {
+    fun saveExpense(force: Boolean = false) {
         val title = expenseTitle.value
         val amount = expenseAmount.value.toLongOrNull() ?: 0L
         val note = expenseNote.value.takeIf { it.isNotBlank() }
@@ -61,6 +65,12 @@ class ExpenseViewModel @Inject constructor(
         viewModelScope.launch {
             val cycle = repository.getActiveCycle().first()
             if (cycle != null) {
+                // Check if the expense date is past the cycle's deadline
+                if (!force && timestamp > cycle.endDate) {
+                    _showDeadlineWarning.value = true
+                    return@launch
+                }
+
                 val expense = Expense(
                     id = editingExpenseId ?: 0L,
                     cycleId = cycle.id,
@@ -75,6 +85,10 @@ class ExpenseViewModel @Inject constructor(
                 _navigationEvent.emit(ExpenseNavigation.Back)
             }
         }
+    }
+
+    fun dismissWarning() {
+        _showDeadlineWarning.value = false
     }
 
     fun deleteExpense(id: Long) {

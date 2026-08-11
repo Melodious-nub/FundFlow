@@ -24,14 +24,9 @@ class SplashViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             delay(2000)
-            val isOnboardingCompleted = userPreferences.isOnboardingCompleted.first()
-            if (isOnboardingCompleted) {
-                val activeCycle = repository.getActiveCycle().first()
-                if (activeCycle != null) {
-                    _navigationEvent.emit(SplashNavigation.ToDashboard)
-                } else {
-                    _navigationEvent.emit(SplashNavigation.ToBudgetSetup)
-                }
+            val allCycles = repository.getAllCycles().first()
+            if (allCycles.isNotEmpty()) {
+                _navigationEvent.emit(SplashNavigation.ToDashboard)
             } else {
                 _navigationEvent.emit(SplashNavigation.ToOnboarding)
             }

@@ -31,9 +31,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.shawon.fundflow.core.common.Screen
 import com.shawon.fundflow.ui.analytics.AnalyticsScreen
+import com.shawon.fundflow.ui.backup.BackupScreen
+import com.shawon.fundflow.ui.backup.CloudBackupScreen
+import com.shawon.fundflow.ui.backup.LocalBackupScreen
 import com.shawon.fundflow.ui.budget.BudgetSetupScreen
+import com.shawon.fundflow.ui.cycle.CycleManagementScreen
 import com.shawon.fundflow.ui.dashboard.DashboardScreen
 import com.shawon.fundflow.ui.expense.ExpenseScreen
 import com.shawon.fundflow.ui.history.HistoryScreen
@@ -129,7 +134,7 @@ fun FundFlowAppContent() {
                         }
                     },
                     onNavigateToBudgetSetup = {
-                        navController.navigate(Screen.BudgetSetup) {
+                        navController.navigate(Screen.BudgetSetup()) {
                             popUpTo(Screen.Splash) { inclusive = true }
                         }
                     },
@@ -144,9 +149,10 @@ fun FundFlowAppContent() {
             composable<Screen.Onboarding> {
                 OnboardingScreen(
                     onNavigateToBudgetSetup = {
-                        navController.navigate(Screen.BudgetSetup) {
-                            popUpTo(Screen.Onboarding) { inclusive = true }
-                        }
+                        navController.navigate(Screen.BudgetSetup())
+                    },
+                    onNavigateToRecovery = {
+                        navController.navigate(Screen.Backup(isInitialSetup = true))
                     }
                 )
             }
@@ -155,8 +161,11 @@ fun FundFlowAppContent() {
                 BudgetSetupScreen(
                     onNavigateToDashboard = {
                         navController.navigate(Screen.Dashboard) {
-                            popUpTo(Screen.BudgetSetup) { inclusive = true }
+                            popUpTo(0) { inclusive = true }
                         }
+                    },
+                    onNavigateBack = {
+                        navController.popBackStack()
                     }
                 )
             }
@@ -166,8 +175,8 @@ fun FundFlowAppContent() {
                     onNavigateToAddExpense = {
                         navController.navigate(Screen.ExpenseForm)
                     },
-                    onNavigateToBudgetSetup = {
-                        navController.navigate(Screen.BudgetSetup)
+                    onNavigateToBudgetSetup = { cycleId ->
+                        navController.navigate(Screen.BudgetSetup(cycleId))
                     }
                 )
             }
@@ -188,10 +197,69 @@ fun FundFlowAppContent() {
                 HistoryScreen()
             }
 
+            composable<Screen.CycleManagement> {
+                CycleManagementScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onEditCycle = { cycleId ->
+                        navController.navigate(Screen.BudgetSetup(cycleId))
+                    }
+                )
+            }
+
             composable<Screen.Settings> {
                 SettingsScreen(
                     onNavigateToAbout = {
                         navController.navigate(Screen.About)
+                    },
+                    onNavigateToCycleManagement = {
+                        navController.navigate(Screen.CycleManagement)
+                    },
+                    onNavigateToBackup = {
+                        navController.navigate(Screen.Backup(isInitialSetup = false))
+                    }
+                )
+            }
+
+            composable<Screen.Backup> { backStackEntry ->
+                val args = backStackEntry.toRoute<Screen.Backup>()
+                BackupScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onNavigateToLocalBackup = {
+                        navController.navigate(Screen.LocalBackup(isInitialSetup = args.isInitialSetup))
+                    },
+                    onNavigateToCloudBackup = {
+                        navController.navigate(Screen.CloudBackup(isInitialSetup = args.isInitialSetup))
+                    },
+                    isInitialSetup = args.isInitialSetup
+                )
+            }
+
+            composable<Screen.LocalBackup> {
+                LocalBackupScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onRestoreSuccess = {
+                        navController.navigate(Screen.Dashboard) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable<Screen.CloudBackup> {
+                CloudBackupScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onRestoreSuccess = {
+                        navController.navigate(Screen.Dashboard) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 )
             }
