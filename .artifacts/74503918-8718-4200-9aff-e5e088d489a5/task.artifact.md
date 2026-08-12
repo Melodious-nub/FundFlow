@@ -1,7 +1,0 @@
-- [x] Delete redundant `.png` files in `mipmap-hdpi`
-- [x] Delete redundant `.png` files in `mipmap-ldpi`
-- [x] Delete redundant `.png` files in `mipmap-mdpi`
-- [x] Delete redundant `.png` files in `mipmap-xhdpi`
-- [x] Delete redundant `.png` files in `mipmap-xxhdpi`
-- [x] Delete redundant `.png` files in `mipmap-xxxhdpi`
-- [x] Verify build
