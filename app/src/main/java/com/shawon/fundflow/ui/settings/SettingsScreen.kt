@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -49,6 +50,7 @@ fun SettingsScreen(
     onNavigateToAbout: () -> Unit,
     onNavigateToCycleManagement: () -> Unit,
     onNavigateToBackup: () -> Unit,
+    onNavigateToUpdate: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val currency by viewModel.currencyCode.collectAsState()
@@ -112,6 +114,15 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(8.dp))
+
+            SettingItem(
+                title = "App Updates",
+                subtitle = "Check for the latest version",
+                icon = Icons.Default.Update,
+                onClick = onNavigateToUpdate
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             SettingItem(
                 title = "About FundFlow",

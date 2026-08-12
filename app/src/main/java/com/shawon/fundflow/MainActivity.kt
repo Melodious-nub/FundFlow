@@ -22,9 +22,13 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -33,6 +37,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.shawon.fundflow.core.common.Screen
+import com.shawon.fundflow.core.update.UpdateManager
 import com.shawon.fundflow.ui.analytics.AnalyticsScreen
 import com.shawon.fundflow.ui.backup.BackupScreen
 import com.shawon.fundflow.ui.backup.CloudBackupScreen
@@ -44,19 +49,40 @@ import com.shawon.fundflow.ui.expense.ExpenseScreen
 import com.shawon.fundflow.ui.history.HistoryScreen
 import com.shawon.fundflow.ui.onboarding.OnboardingScreen
 import com.shawon.fundflow.ui.settings.AboutScreen
+import com.shawon.fundflow.ui.settings.AppUpdateScreen
 import com.shawon.fundflow.ui.settings.SettingsScreen
 import com.shawon.fundflow.ui.splash.SplashScreen
 import com.shawon.fundflow.ui.theme.FundFlowTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var updateManager: UpdateManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             FundFlowTheme {
+                val lifecycleOwner = LocalLifecycleOwner.current
+                DisposableEffect(lifecycleOwner) {
+                    val observer = LifecycleEventObserver { _, event ->
+                        when (event) {
+                            Lifecycle.Event.ON_START -> updateManager.registerReceiver()
+                            Lifecycle.Event.ON_STOP -> updateManager.unregisterReceiver()
+                            else -> {}
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose {
+                        lifecycleOwner.lifecycle.removeObserver(observer)
+                        updateManager.unregisterReceiver()
+                    }
+                }
                 FundFlowAppContent()
             }
         }
@@ -218,6 +244,17 @@ fun FundFlowAppContent() {
                     },
                     onNavigateToBackup = {
                         navController.navigate(Screen.Backup(isInitialSetup = false))
+                    },
+                    onNavigateToUpdate = {
+                        navController.navigate(Screen.AppUpdate)
+                    }
+                )
+            }
+
+            composable<Screen.AppUpdate> {
+                AppUpdateScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
                     }
                 )
             }
@@ -238,7 +275,8 @@ fun FundFlowAppContent() {
                 )
             }
 
-            composable<Screen.LocalBackup> {
+            composable<Screen.LocalBackup> { backStackEntry ->
+                val args = backStackEntry.toRoute<Screen.LocalBackup>()
                 LocalBackupScreen(
                     onNavigateBack = {
                         navController.popBackStack()
@@ -247,11 +285,13 @@ fun FundFlowAppContent() {
                         navController.navigate(Screen.Dashboard) {
                             popUpTo(0) { inclusive = true }
                         }
-                    }
+                    },
+                    isInitialSetup = args.isInitialSetup
                 )
             }
 
-            composable<Screen.CloudBackup> {
+            composable<Screen.CloudBackup> { backStackEntry ->
+                val args = backStackEntry.toRoute<Screen.CloudBackup>()
                 CloudBackupScreen(
                     onNavigateBack = {
                         navController.popBackStack()
@@ -260,7 +300,8 @@ fun FundFlowAppContent() {
                         navController.navigate(Screen.Dashboard) {
                             popUpTo(0) { inclusive = true }
                         }
-                    }
+                    },
+                    isInitialSetup = args.isInitialSetup
                 )
             }
 

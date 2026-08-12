@@ -25,6 +25,15 @@ class UserPreferences @Inject constructor(
     private val LAST_BACKUP_TIME = stringPreferencesKey("last_backup_time")
     private val LAST_BACKUP_SIZE = stringPreferencesKey("last_backup_size")
     private val LAST_CLOUD_BACKUP_TIME = stringPreferencesKey("last_cloud_backup_time")
+    private val LAST_AUTO_BACKUP_TIME = stringPreferencesKey("last_auto_backup_time")
+    private val LAST_UPDATE_CHECK_TIME = stringPreferencesKey("last_update_check_time")
+    private val INSTALLED_VERSION_NAME = stringPreferencesKey("installed_version_name")
+    private val LAST_APP_UPDATE_TIME = stringPreferencesKey("last_app_update_time")
+
+    private val AUTO_BACKUP_ENABLED = booleanPreferencesKey("auto_backup_enabled")
+    private val AUTO_BACKUP_TARGET = stringPreferencesKey("auto_backup_target")
+    private val BACKUP_NETWORK_TYPE = stringPreferencesKey("backup_network_type")
+    private val BACKUP_FREQUENCY = stringPreferencesKey("backup_frequency")
 
     val isOnboardingCompleted: Flow<Boolean> = context.dataStore.data
         .map { preferences ->
@@ -62,6 +71,43 @@ class UserPreferences @Inject constructor(
         }
     }
 
+    val lastAutoBackupTime: Flow<Long> = context.dataStore.data
+        .map { preferences ->
+            preferences[LAST_AUTO_BACKUP_TIME]?.toLongOrNull() ?: 0L
+        }
+
+    suspend fun updateAutoBackupTime(time: Long) {
+        context.dataStore.edit { preferences ->
+            preferences[LAST_AUTO_BACKUP_TIME] = time.toString()
+        }
+    }
+
+    val lastUpdateCheckTime: Flow<Long> = context.dataStore.data
+        .map { preferences ->
+            preferences[LAST_UPDATE_CHECK_TIME]?.toLongOrNull() ?: 0L
+        }
+
+    suspend fun updateLastUpdateCheckTime(time: Long) {
+        context.dataStore.edit { preferences ->
+            preferences[LAST_UPDATE_CHECK_TIME] = time.toString()
+        }
+    }
+
+    val lastAppUpdateTime: Flow<Long> = context.dataStore.data
+        .map { preferences ->
+            preferences[LAST_APP_UPDATE_TIME]?.toLongOrNull() ?: 0L
+        }
+
+    suspend fun checkAndTrackVersionChange(currentVersion: String) {
+        context.dataStore.edit { preferences ->
+            val lastSavedVersion = preferences[INSTALLED_VERSION_NAME]
+            if (lastSavedVersion != null && lastSavedVersion != currentVersion) {
+                preferences[LAST_APP_UPDATE_TIME] = System.currentTimeMillis().toString()
+            }
+            preferences[INSTALLED_VERSION_NAME] = currentVersion
+        }
+    }
+
     val currencyCode: Flow<String> = context.dataStore.data
         .map { preferences ->
             preferences[CURRENCY_CODE] ?: "TK"
@@ -72,4 +118,30 @@ class UserPreferences @Inject constructor(
             preferences[CURRENCY_CODE] = code
         }
     }
+
+    val autoBackupSettings: Flow<AutoBackupSettings> = context.dataStore.data
+        .map { preferences ->
+            AutoBackupSettings(
+                enabled = preferences[AUTO_BACKUP_ENABLED] ?: false,
+                target = preferences[AUTO_BACKUP_TARGET] ?: "BOTH",
+                networkType = preferences[BACKUP_NETWORK_TYPE] ?: "BOTH",
+                frequency = preferences[BACKUP_FREQUENCY] ?: "DAILY"
+            )
+        }
+
+    suspend fun updateAutoBackupSettings(settings: AutoBackupSettings) {
+        context.dataStore.edit { preferences ->
+            preferences[AUTO_BACKUP_ENABLED] = settings.enabled
+            preferences[AUTO_BACKUP_TARGET] = settings.target
+            preferences[BACKUP_NETWORK_TYPE] = settings.networkType
+            preferences[BACKUP_FREQUENCY] = settings.frequency
+        }
+    }
 }
+
+data class AutoBackupSettings(
+    val enabled: Boolean,
+    val target: String, // LOCAL, CLOUD, BOTH
+    val networkType: String, // WIFI, CELLULAR, BOTH
+    val frequency: String // DAILY, WEEKLY, 15_DAYS, MONTHLY
+)

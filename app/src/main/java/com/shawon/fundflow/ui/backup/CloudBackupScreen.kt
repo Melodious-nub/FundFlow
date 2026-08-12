@@ -26,6 +26,7 @@ import java.util.*
 fun CloudBackupScreen(
     onNavigateBack: () -> Unit,
     onRestoreSuccess: () -> Unit = {},
+    isInitialSetup: Boolean = false,
     viewModel: CloudBackupViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -38,7 +39,7 @@ fun CloudBackupScreen(
     val signInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        viewModel.onSignInResult(result.resultCode == android.app.Activity.RESULT_OK)
+        viewModel.onSignInResult(result.data)
     }
 
     LaunchedEffect(Unit) {
@@ -53,7 +54,7 @@ fun CloudBackupScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Cloud Backup (Google Drive)", fontWeight = FontWeight.Bold) },
+                title = { Text(if (isInitialSetup) "Restore from Cloud" else "Cloud Backup (Google Drive)", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -71,11 +72,15 @@ fun CloudBackupScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (!uiState.isSignedIn) {
-                    CloudSignInContent(onSignIn = { signInLauncher.launch(viewModel.getSignInIntent()) })
+                    CloudSignInContent(
+                        isInitialSetup = isInitialSetup,
+                        onSignIn = { signInLauncher.launch(viewModel.getSignInIntent()) }
+                    )
                 } else {
                     CloudManageContent(
                         email = uiState.userEmail ?: "Unknown",
                         lastBackupTime = lastBackupTime,
+                        isInitialSetup = isInitialSetup,
                         onBackup = { viewModel.backupToCloud() },
                         onRestore = { showRestoreConfirmation = true },
                         onSignOut = { showLogoutConfirmation = true }
@@ -146,7 +151,10 @@ fun CloudBackupScreen(
 }
 
 @Composable
-private fun CloudSignInContent(onSignIn: () -> Unit) {
+private fun CloudSignInContent(
+    isInitialSetup: Boolean,
+    onSignIn: () -> Unit
+) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -160,13 +168,15 @@ private fun CloudSignInContent(onSignIn: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "Secure your data in the cloud",
+            text = if (isInitialSetup) "Restore your data from Cloud" else "Secure your data in the cloud",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Sign in with Google to backup your budget and expenses to your own Google Drive AppData folder.",
+            text = if (isInitialSetup) 
+                "Sign in with Google to recover your previous budget and expenses from your private AppData folder on Google Drive."
+                else "Sign in with Google to backup your budget and expenses to your own Google Drive AppData folder.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -187,6 +197,7 @@ private fun CloudSignInContent(onSignIn: () -> Unit) {
 private fun CloudManageContent(
     email: String,
     lastBackupTime: Long,
+    isInitialSetup: Boolean,
     onBackup: () -> Unit,
     onRestore: () -> Unit,
     onSignOut: () -> Unit
@@ -215,30 +226,40 @@ private fun CloudManageContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        if (!isInitialSetup) {
+            Spacer(modifier = Modifier.height(16.dp))
 
-        FundFlowCard(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Last Cloud Backup",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                val dateText = if (lastBackupTime > 0) {
-                    SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(lastBackupTime))
-                } else "Never"
-                Text(text = dateText, style = MaterialTheme.typography.bodyMedium)
+            FundFlowCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Last Cloud Backup",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    val dateText = if (lastBackupTime > 0) {
+                        SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(lastBackupTime))
+                    } else "Never"
+                    Text(text = dateText, style = MaterialTheme.typography.bodyMedium)
+                }
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            CloudActionButton(
+                title = "Backup Now",
+                icon = Icons.Default.CloudUpload,
+                onClick = onBackup
+            )
+        } else {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Welcome back! Click the button below to restore your data from Google Drive.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
         }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        CloudActionButton(
-            title = "Backup Now",
-            icon = Icons.Default.CloudUpload,
-            onClick = onBackup
-        )
 
         Spacer(modifier = Modifier.height(16.dp))
 

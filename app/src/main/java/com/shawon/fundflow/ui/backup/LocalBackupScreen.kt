@@ -24,6 +24,7 @@ import java.util.*
 fun LocalBackupScreen(
     onNavigateBack: () -> Unit,
     onRestoreSuccess: () -> Unit = {},
+    isInitialSetup: Boolean = false,
     viewModel: BackupViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -60,7 +61,7 @@ fun LocalBackupScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Backup & Restore", fontWeight = FontWeight.Bold) },
+                title = { Text(if (isInitialSetup) "Restore from Device" else "Backup & Restore", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -77,44 +78,54 @@ fun LocalBackupScreen(
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                FundFlowCard(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Last Backup Info",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        val lastBackupDate = if (backupInfo.first > 0) {
-                            SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(backupInfo.first))
-                        } else "Never"
-                        
-                        val lastBackupSize = if (backupInfo.second > 0) {
-                            String.format("%.2f KB", backupInfo.second / 1024f)
-                        } else "0 KB"
+                if (!isInitialSetup) {
+                    FundFlowCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Last Backup Info",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            val lastBackupDate = if (backupInfo.first > 0) {
+                                SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(backupInfo.first))
+                            } else "Never"
+                            
+                            val lastBackupSize = if (backupInfo.second > 0) {
+                                String.format("%.2f KB", backupInfo.second / 1024f)
+                            } else "0 KB"
 
-                        Text(text = "Time: $lastBackupDate", style = MaterialTheme.typography.bodyMedium)
-                        Text(text = "Size: $lastBackupSize", style = MaterialTheme.typography.bodyMedium)
+                            Text(text = "Time: $lastBackupDate", style = MaterialTheme.typography.bodyMedium)
+                            Text(text = "Size: $lastBackupSize", style = MaterialTheme.typography.bodyMedium)
+                        }
                     }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Button(
+                        onClick = { 
+                            val fileName = "fundflow_backup_${System.currentTimeMillis()}.json"
+                            createDocumentLauncher.launch(fileName) 
+                        },
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = MaterialTheme.shapes.large
+                    ) {
+                        Icon(Icons.Default.Download, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Export Backup")
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                } else {
+                    // Initial setup welcome text
+                    Text(
+                        text = "Select a previously exported FundFlow backup file (.json) to restore your budget data.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = { 
-                        val fileName = "fundflow_backup_${System.currentTimeMillis()}.json"
-                        createDocumentLauncher.launch(fileName) 
-                    },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = MaterialTheme.shapes.large
-                ) {
-                    Icon(Icons.Default.Download, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Export Backup")
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedButton(
                     onClick = { openDocumentLauncher.launch(arrayOf("application/json")) },
@@ -129,7 +140,9 @@ fun LocalBackupScreen(
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 Text(
-                    text = "Local backup only. Data will be saved as a JSON file. Please keep this file safe to restore your data later.",
+                    text = if (isInitialSetup) 
+                        "Data will be restored exactly as it was when the backup was created. Look for files in your Downloads/FundFlow_Backups folder."
+                        else "Data will be saved as a JSON file. Automatic backups are located in Downloads/FundFlow_Backups.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 8.dp)

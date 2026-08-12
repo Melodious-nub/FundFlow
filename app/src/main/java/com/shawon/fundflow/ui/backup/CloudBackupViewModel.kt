@@ -1,7 +1,10 @@
 package com.shawon.fundflow.ui.backup
 
+import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.common.api.ApiException
 import com.shawon.fundflow.core.auth.GoogleAuthManager
 import com.shawon.fundflow.data.backup.CloudBackupRepository
 import com.shawon.fundflow.data.local.UserPreferences
@@ -45,12 +48,24 @@ class CloudBackupViewModel @Inject constructor(
 
     fun getSignInIntent() = googleAuthManager.getSignInIntent()
 
-    fun onSignInResult(success: Boolean) {
-        if (success) {
-            checkUserStatus()
-        } else {
-            viewModelScope.launch {
-                _event.emit(CloudBackupEvent.ShowMessage("Google Sign-In failed"))
+    fun onSignInResult(data: Intent?) {
+        viewModelScope.launch {
+            try {
+                val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+                task.getResult(ApiException::class.java)
+                checkUserStatus()
+                _event.emit(CloudBackupEvent.ShowMessage("Signed in successfully"))
+            } catch (e: ApiException) {
+                val message = when (e.statusCode) {
+                    7 -> "Network Error (Status: 7)"
+                    10 -> "Developer Error: SHA-1 or Package name mismatch (Status: 10)"
+                    12500 -> "Sign-in Failed: Check API configuration (Status: 12500)"
+                    12501 -> "Sign-in Cancelled"
+                    else -> "Sign-in Failed (Status: ${e.statusCode})"
+                }
+                _event.emit(CloudBackupEvent.ShowMessage(message))
+            } catch (e: Exception) {
+                _event.emit(CloudBackupEvent.ShowMessage("An unexpected error occurred: ${e.message}"))
             }
         }
     }
