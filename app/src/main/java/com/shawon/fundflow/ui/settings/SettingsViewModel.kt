@@ -18,9 +18,18 @@ class SettingsViewModel @Inject constructor(
     val currencyCode: StateFlow<String> = userPreferences.currencyCode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "USD")
 
+    val themeMode: StateFlow<String> = userPreferences.themeMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "SYSTEM")
+
     fun updateCurrency(code: String) {
         viewModelScope.launch {
             userPreferences.setCurrencyCode(code)
+        }
+    }
+
+    fun updateTheme(mode: String) {
+        viewModelScope.launch {
+            userPreferences.setThemeMode(mode)
         }
     }
 }

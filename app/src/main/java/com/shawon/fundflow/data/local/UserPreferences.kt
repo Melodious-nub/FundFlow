@@ -119,6 +119,17 @@ class UserPreferences @Inject constructor(
         }
     }
 
+    val themeMode: Flow<String> = context.dataStore.data
+        .map { preferences ->
+            preferences[THEME_MODE] ?: "SYSTEM"
+        }
+
+    suspend fun setThemeMode(mode: String) {
+        context.dataStore.edit { preferences ->
+            preferences[THEME_MODE] = mode
+        }
+    }
+
     val autoBackupSettings: Flow<AutoBackupSettings> = context.dataStore.data
         .map { preferences ->
             AutoBackupSettings(

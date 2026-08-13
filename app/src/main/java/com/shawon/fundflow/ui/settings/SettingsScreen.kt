@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Update
@@ -54,7 +55,11 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val currency by viewModel.currencyCode.collectAsState()
+    val themeMode by viewModel.themeMode.collectAsState()
+
     var showCurrencySheet by remember { mutableStateOf(false) }
+    var showThemeSheet by remember { mutableStateOf(false) }
+
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
 
@@ -95,6 +100,15 @@ fun SettingsScreen(
                 subtitle = "View, edit or delete budget cycles",
                 icon = Icons.Default.History,
                 onClick = onNavigateToCycleManagement
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SettingItem(
+                title = "Theme",
+                subtitle = "Mode: ${themeMode.lowercase().replaceFirstChar { it.uppercase() }.replace("System", "System Default")}",
+                icon = Icons.Default.Palette,
+                onClick = { showThemeSheet = true }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -155,6 +169,27 @@ fun SettingsScreen(
             )
         }
     }
+
+    if (showThemeSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showThemeSheet = false },
+            sheetState = sheetState
+        ) {
+            ThemeSelectionContent(
+                selectedTheme = themeMode,
+                onThemeSelected = { mode ->
+                    scope.launch {
+                        viewModel.updateTheme(mode)
+                        sheetState.hide()
+                    }.invokeOnCompletion {
+                        if (!sheetState.isVisible) {
+                            showThemeSheet = false
+                        }
+                    }
+                }
+            )
+        }
+    }
 }
 
 @Composable
@@ -199,6 +234,44 @@ private fun SettingItem(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun ThemeSelectionContent(
+    selectedTheme: String,
+    onThemeSelected: (String) -> Unit
+) {
+    val themes = listOf(
+        "SYSTEM" to "System Default",
+        "LIGHT" to "Light Mode",
+        "DARK" to "Dark Mode"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 32.dp)
+    ) {
+        Text(
+            text = "Select Theme",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(16.dp)
+        )
+        HorizontalDivider()
+        themes.forEach { (mode, name) ->
+            ListItem(
+                headlineContent = { Text(name) },
+                leadingContent = {
+                    RadioButton(
+                        selected = selectedTheme == mode,
+                        onClick = { onThemeSelected(mode) }
+                    )
+                },
+                modifier = Modifier.clickable { onThemeSelected(mode) }
             )
         }
     }
