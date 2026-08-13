@@ -46,12 +46,22 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.toColorInt
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.platform.LocalDensity
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisGuidelineComponent
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLineComponent
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottomAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStartAxis
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
+import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
+import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
+import com.patrykandpatrick.vico.core.common.Fill
+import com.patrykandpatrick.vico.core.common.shader.DynamicShader
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
@@ -178,7 +188,7 @@ fun AnalyticsScreen(
                                 text = "$currencySymbol ${s.totalSpent}",
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.ExtraBold
                             )
                         }
                         Spacer(modifier = Modifier.width(12.dp))
@@ -187,8 +197,8 @@ fun AnalyticsScreen(
                             Text(
                                 text = "$currencySymbol ${s.averagePerDay}",
                                 style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.secondary,
-                                fontWeight = FontWeight.Bold
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.ExtraBold
                             )
                         }
                     }
@@ -233,11 +243,22 @@ fun AnalyticsScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         
                         if (s.dailyTrend.isNotEmpty()) {
+                            val axisLabel = rememberAxisLabelComponent(color = MaterialTheme.colorScheme.onSurface)
+                            val axisLine = rememberAxisLineComponent(color = MaterialTheme.colorScheme.outlineVariant)
+                            val axisGuideline = rememberAxisGuidelineComponent(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
                             CartesianChartHost(
                                 chart = rememberCartesianChart(
-                                    rememberColumnCartesianLayer(),
-                                    startAxis = rememberStartAxis(),
-                                    bottomAxis = rememberBottomAxis(),
+                                    rememberColumnCartesianLayer(
+                                        columnProvider = ColumnCartesianLayer.ColumnProvider.series(
+                                            rememberLineComponent(
+                                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                                                thickness = 8.dp
+                                            )
+                                        )
+                                    ),
+                                    startAxis = rememberStartAxis(label = axisLabel, line = axisLine, guideline = axisGuideline),
+                                    bottomAxis = rememberBottomAxis(label = axisLabel, line = axisLine, guideline = axisGuideline),
                                 ),
                                 modelProducer = columnModelProducer,
                                 modifier = Modifier.fillMaxWidth().height(200.dp)
@@ -263,11 +284,22 @@ fun AnalyticsScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         
                         if (s.dailyTrend.isNotEmpty()) {
+                            val axisLabel = rememberAxisLabelComponent(color = MaterialTheme.colorScheme.onSurface)
+                            val axisLine = rememberAxisLineComponent(color = MaterialTheme.colorScheme.outlineVariant)
+                            val axisGuideline = rememberAxisGuidelineComponent(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
                             CartesianChartHost(
                                 chart = rememberCartesianChart(
-                                    rememberLineCartesianLayer(),
-                                    startAxis = rememberStartAxis(),
-                                    bottomAxis = rememberBottomAxis(),
+                                    rememberLineCartesianLayer(
+                                        lineProvider = LineCartesianLayer.LineProvider.series(
+                                            rememberLine(
+                                                fill = LineCartesianLayer.LineFill.single(Fill(MaterialTheme.colorScheme.primary.toArgb())),
+                                                thickness = 3.dp
+                                            )
+                                        )
+                                    ),
+                                    startAxis = rememberStartAxis(label = axisLabel, line = axisLine, guideline = axisGuideline),
+                                    bottomAxis = rememberBottomAxis(label = axisLabel, line = axisLine, guideline = axisGuideline),
                                 ),
                                 modelProducer = lineModelProducer,
                                 modifier = Modifier.fillMaxWidth().height(150.dp)
