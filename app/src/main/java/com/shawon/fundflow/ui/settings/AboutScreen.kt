@@ -3,15 +3,7 @@ package com.shawon.fundflow.ui.settings
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -25,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -81,8 +74,14 @@ fun AboutScreen(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("💸", fontSize = 64.sp)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Image(
+                        painter = painterResource(id = R.drawable.main_logo),
+                        contentDescription = "FundFlow Logo",
+                        modifier = Modifier
+                            .size(100.dp)
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "FundFlow",
                         style = MaterialTheme.typography.headlineLarge,
@@ -129,7 +128,7 @@ fun AboutScreen(
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.shawon),
-                        contentDescription = "Md. Shawon Talukder",
+                        contentDescription = "Shawon Talukder",
                         modifier = Modifier
                             .size(120.dp)
                             .clip(CircleShape),
@@ -139,7 +138,7 @@ fun AboutScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     Text(
-                        text = "Md. Shawon Talukder",
+                        text = "Shawon Talukder",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -157,20 +156,32 @@ fun AboutScreen(
                     
                     Spacer(modifier = Modifier.height(32.dp))
                     
-                    Button(
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.linkedin.com/in/shawon-taluckder"))
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.large,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.Launch, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Button(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.linkedin.com/in/shawon-taluckder"))
+                                context.startActivity(intent)
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = MaterialTheme.shapes.large
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.Launch, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("LinkedIn")
+                        }
+                        
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Connect on LinkedIn", fontWeight = FontWeight.Bold)
+                        
+                        OutlinedButton(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.fiverr.com/talukder_shawon/"))
+                                context.startActivity(intent)
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = MaterialTheme.shapes.large
+                        ) {
+                            Text("Hire on Fiverr", fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
