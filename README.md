@@ -101,6 +101,16 @@ This app is designed to be a "Vault" for your financial data.
 
 ---
 
+## 📥 Download & Installation
+
+Get the latest version of FundFlow directly from the releases page:
+
+[![Download APK Button](https://img.shields.io/badge/Download-ScreenLocker%20APK-success?style=for-the-badge&logo=android)](https://github.com/Melodious-nub/FundFlow/releases/latest)
+
+> **Alternative:** You can also check all previous versions in the [GitHub Releases](https://github.com/Melodious-nub/FundFlow/releases) section.
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
