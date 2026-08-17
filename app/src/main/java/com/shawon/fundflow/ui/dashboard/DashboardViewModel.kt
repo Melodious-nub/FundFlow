@@ -6,6 +6,7 @@ import com.shawon.fundflow.domain.model.BudgetCycle
 import com.shawon.fundflow.domain.model.Expense
 import com.shawon.fundflow.domain.repository.BudgetRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -59,7 +61,8 @@ class DashboardViewModel @Inject constructor(
                 else calculateDashboardData(cycle, expenses)
             }
         }
-    }.stateIn(
+    }.flowOn(Dispatchers.Default)
+    .stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = DashboardUiState.Loading
@@ -92,7 +95,7 @@ class DashboardViewModel @Inject constructor(
         val progress = if (cycle.totalBudget > 0) totalSpent.toFloat() / cycle.totalBudget else 0f
         
         val todayStart = now - (now % (24 * 60 * 60 * 1000))
-        val todaySpent = expenses.filter { it.timestamp >= todayStart }.sumOf { it.amount }
+        val todaySpent = expenses.asSequence().filter { it.timestamp >= todayStart }.sumOf { it.amount }
 
         return DashboardUiState.Success(
             cycle = cycle,

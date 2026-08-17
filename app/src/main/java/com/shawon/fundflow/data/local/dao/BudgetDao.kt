@@ -7,6 +7,7 @@ import androidx.room.Query
 import com.shawon.fundflow.data.local.entities.BudgetCycleEntity
 import com.shawon.fundflow.data.local.entities.CategoryEntity
 import com.shawon.fundflow.data.local.entities.ExpenseEntity
+import com.shawon.fundflow.data.local.entities.ExpenseWithCategory
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -29,11 +30,13 @@ interface BudgetDao {
     @Query("DELETE FROM categories WHERE id = :categoryId")
     suspend fun deleteCategory(categoryId: Long)
 
+    @androidx.room.Transaction
     @Query("SELECT * FROM expenses WHERE cycleId = :cycleId ORDER BY timestamp DESC")
-    fun getExpensesForCycle(cycleId: Long): Flow<List<ExpenseEntity>>
+    fun getExpensesForCycle(cycleId: Long): Flow<List<ExpenseWithCategory>>
 
+    @androidx.room.Transaction
     @Query("SELECT * FROM expenses WHERE id = :expenseId")
-    suspend fun getExpenseById(expenseId: Long): ExpenseEntity?
+    suspend fun getExpenseById(expenseId: Long): ExpenseWithCategory?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertExpense(expense: ExpenseEntity)

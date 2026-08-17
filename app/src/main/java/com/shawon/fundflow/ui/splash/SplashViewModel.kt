@@ -5,11 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.shawon.fundflow.data.local.UserPreferences
 import com.shawon.fundflow.domain.repository.BudgetRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -23,6 +25,9 @@ class SplashViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.seedDefaultCategories()
+            }
             delay(2000)
             val allCycles = repository.getAllCycles().first()
             if (allCycles.isNotEmpty()) {

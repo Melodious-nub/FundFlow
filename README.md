@@ -52,6 +52,11 @@ A truly professional app should look great in any lighting. FundFlow features a 
 - **Dark Mode:** A battery-saving, eye-friendly high-contrast dark UI.
 - **Light Mode:** A crisp, clean white UI with optimized system status bars (clock/icons correctly tinted for visibility).
 
+### 📝 Professional Note Editor
+Add context to your expenses with our advanced note-taking feature:
+- **Automatic Lists:** Start a line with `1. ` or `- ` and FundFlow will automatically continue the numbering or bullet points on the next line.
+- **Smart Auto-Sum:** Mention amounts in parentheses within your notes (e.g., `(500) (100)`) and FundFlow will automatically sum them up into the expense amount field.
+
 ### 🚀 Seamless In-App Updates
 Stay ahead with the latest features. FundFlow includes a dedicated **App Update** screen that checks the **GitHub Releases API** and handles the download and installation process automatically via a background BroadcastReceiver.
 

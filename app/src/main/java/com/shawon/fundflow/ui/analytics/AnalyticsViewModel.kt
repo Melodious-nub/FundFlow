@@ -6,12 +6,14 @@ import com.shawon.fundflow.domain.model.BudgetCycle
 import com.shawon.fundflow.domain.model.Expense
 import com.shawon.fundflow.domain.repository.BudgetRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -56,7 +58,8 @@ class AnalyticsViewModel @Inject constructor(
         else repository.getExpensesForCycle(model.targetId).map { expenses ->
             processAnalytics(expenses, model.categories, model.targetCycle)
         }
-    }.stateIn(
+    }.flowOn(Dispatchers.Default)
+    .stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = AnalyticsUiState.Loading
@@ -87,7 +90,7 @@ class AnalyticsViewModel @Inject constructor(
         
         val totalSpent = expenses.sumOf { it.amount }
         
-        val categoryBreakdown = categoryBreakdownMap.map { (catId, amount) ->
+        val categoryBreakdown = categoryBreakdownMap.asSequence().map { (catId, amount) ->
             val category = categoryMap[catId]
             CategoryAnalytics(
                 categoryId = catId,
@@ -96,7 +99,7 @@ class AnalyticsViewModel @Inject constructor(
                 percentage = if (totalSpent > 0) amount.toFloat() / totalSpent else 0f,
                 color = category?.colorHex ?: "#9E9E9E"
             )
-        }.sortedByDescending { it.amount }
+        }.sortedByDescending { it.amount }.toList()
 
         val dailyTrend = expenses.groupBy { 
             val cal = java.util.Calendar.getInstance().apply { 

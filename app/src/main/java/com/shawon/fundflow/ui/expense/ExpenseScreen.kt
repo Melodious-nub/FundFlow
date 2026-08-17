@@ -47,6 +47,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.shawon.fundflow.core.designsystem.FundFlowCard
@@ -68,6 +70,15 @@ fun ExpenseScreen(
     val timestamp by viewModel.expenseTimestamp.collectAsState()
     val showDeadlineWarning by viewModel.showDeadlineWarning.collectAsState()
     
+    var noteTextFieldValue by remember { mutableStateOf(TextFieldValue(note)) }
+
+    // Sync external note change (e.g. from loadExpense) to internal TextFieldValue
+    LaunchedEffect(note) {
+        if (note != noteTextFieldValue.text) {
+            noteTextFieldValue = TextFieldValue(text = note, selection = TextRange(note.length))
+        }
+    }
+
     var showDatePicker by remember { mutableStateOf(false) }
     val dateState = rememberDatePickerState(initialSelectedDateMillis = timestamp)
     val formatter = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
@@ -221,11 +232,50 @@ fun ExpenseScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
-                    value = note,
-                    onValueChange = { viewModel.expenseNote.value = it },
+                    value = noteTextFieldValue,
+                    onValueChange = { newValue ->
+                        val processedValue = if (newValue.text.length > noteTextFieldValue.text.length) {
+                            val selection = newValue.selection.start
+                            if (selection > 0 && newValue.text[selection - 1] == '\n') {
+                                val textBeforeCursor = newValue.text.substring(0, selection - 1)
+                                val lastNewLineIndex = textBeforeCursor.lastIndexOf('\n')
+                                val currentLineStart = if (lastNewLineIndex == -1) 0 else lastNewLineIndex + 1
+                                val previousLine = textBeforeCursor.substring(currentLineStart)
+
+                                val numberedRegex = Regex("^(\\d+)\\.\\s")
+                                val numberedMatch = numberedRegex.find(previousLine)
+                                if (numberedMatch != null) {
+                                    val nextNumber = numberedMatch.groupValues[1].toInt() + 1
+                                    val prefix = "$nextNumber. "
+                                    val newText = newValue.text.substring(0, selection) + prefix + newValue.text.substring(selection)
+                                    newValue.copy(text = newText, selection = TextRange(selection + prefix.length))
+                                } else if (previousLine.trimStart().startsWith("- ")) {
+                                    val prefix = "- "
+                                    val newText = newValue.text.substring(0, selection) + prefix + newValue.text.substring(selection)
+                                    newValue.copy(text = newText, selection = TextRange(selection + prefix.length))
+                                } else {
+                                    newValue
+                                }
+                            } else {
+                                newValue
+                            }
+                        } else {
+                            newValue
+                        }
+                        noteTextFieldValue = processedValue
+                        viewModel.expenseNote.value = processedValue.text
+                    },
                     label = { Text("Note (Optional)") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
+                    maxLines = 5,
+                    supportingText = {
+                        Text(
+                            text = "Use (number) for auto-sum. Start lines with '1. ' or '- ' for lists.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                        )
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary
                     )

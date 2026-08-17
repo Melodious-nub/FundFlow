@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
@@ -159,7 +161,7 @@ fun HistoryScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
-                label = { Text("Search transactions") },
+                label = { Text("Search title or amount") },
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 shape = MaterialTheme.shapes.medium,
@@ -293,18 +295,18 @@ private fun ExpenseDetailsDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("💸", fontSize = 24.sp, modifier = Modifier.padding(end = 12.dp))
-                Text(text = "Transaction Details", fontWeight = FontWeight.Bold)
-            }
+            Text(text = "Transaction Details", fontWeight = FontWeight.Bold)
         },
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
                 DetailRow("Title", expense.title)
                 DetailRow("Amount", "$currencySymbol ${expense.amount}", isAmount = true)
                 DetailRow("Category", expense.categoryName ?: "General")
                 DetailRow("Date & Time", SimpleDateFormat("dd MMMM yyyy, hh:mm a", Locale.getDefault()).format(Date(expense.timestamp)))
-                DetailRow("Payment Method", expense.paymentMethod)
                 if (!expense.note.isNullOrBlank()) {
                     DetailRow("Notes", expense.note)
                 }

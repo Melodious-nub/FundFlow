@@ -39,6 +39,26 @@ class ExpenseViewModel @Inject constructor(
     private val _showDeadlineWarning = MutableStateFlow(false)
     val showDeadlineWarning = _showDeadlineWarning.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            expenseNote.collect { note ->
+                calculateAmountFromNote(note)
+            }
+        }
+    }
+
+    private fun calculateAmountFromNote(note: String) {
+        // Regex to match digits within parentheses, e.g., (500)
+        val regex = Regex("\\((\\d+)\\)")
+        val matches = regex.findAll(note)
+        if (matches.any()) {
+            val sum = matches.sumOf { it.groupValues[1].toLong() }
+            if (sum > 0) {
+                expenseAmount.value = sum.toString()
+            }
+        }
+    }
+
     fun loadExpense(id: Long) {
         viewModelScope.launch {
             editingExpenseId = id

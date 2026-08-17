@@ -53,7 +53,10 @@ class HistoryViewModel @Inject constructor(
         else repository.getExpensesForCycle(cycleId)
     }.combine(_searchQuery) { expenses, query ->
         if (query.isBlank()) expenses
-        else expenses.filter { it.title.contains(query, ignoreCase = true) }
+        else expenses.filter { 
+            it.title.contains(query, ignoreCase = true) || 
+            it.amount.toString().contains(query) 
+        }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
