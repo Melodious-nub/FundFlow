@@ -29,6 +29,10 @@ class UserPreferences @Inject constructor(
     private val LAST_UPDATE_CHECK_TIME = stringPreferencesKey("last_update_check_time")
     private val INSTALLED_VERSION_NAME = stringPreferencesKey("installed_version_name")
     private val LAST_APP_UPDATE_TIME = stringPreferencesKey("last_app_update_time")
+    private val LATEST_RELEASE_TAG = stringPreferencesKey("latest_release_tag")
+    private val LATEST_RELEASE_BODY = stringPreferencesKey("latest_release_body")
+    private val LATEST_RELEASE_APK_URL = stringPreferencesKey("latest_release_apk_url")
+    private val LATEST_RELEASE_APK_NAME = stringPreferencesKey("latest_release_apk_name")
 
     private val AUTO_BACKUP_ENABLED = booleanPreferencesKey("auto_backup_enabled")
     private val AUTO_BACKUP_TARGET = stringPreferencesKey("auto_backup_target")
@@ -103,8 +107,32 @@ class UserPreferences @Inject constructor(
             val lastSavedVersion = preferences[INSTALLED_VERSION_NAME]
             if (lastSavedVersion != null && lastSavedVersion != currentVersion) {
                 preferences[LAST_APP_UPDATE_TIME] = System.currentTimeMillis().toString()
+                // Clear old release info if app was actually updated
+                preferences.remove(LATEST_RELEASE_TAG)
+                preferences.remove(LATEST_RELEASE_BODY)
+                preferences.remove(LATEST_RELEASE_APK_URL)
+                preferences.remove(LATEST_RELEASE_APK_NAME)
             }
             preferences[INSTALLED_VERSION_NAME] = currentVersion
+        }
+    }
+
+    val latestReleaseInfo: Flow<Map<String, String>> = context.dataStore.data
+        .map { preferences ->
+            mapOf(
+                "tag" to (preferences[LATEST_RELEASE_TAG] ?: ""),
+                "body" to (preferences[LATEST_RELEASE_BODY] ?: ""),
+                "url" to (preferences[LATEST_RELEASE_APK_URL] ?: ""),
+                "name" to (preferences[LATEST_RELEASE_APK_NAME] ?: "")
+            )
+        }
+
+    suspend fun saveLatestRelease(tag: String, body: String, url: String, name: String) {
+        context.dataStore.edit { preferences ->
+            preferences[LATEST_RELEASE_TAG] = tag
+            preferences[LATEST_RELEASE_BODY] = body
+            preferences[LATEST_RELEASE_APK_URL] = url
+            preferences[LATEST_RELEASE_APK_NAME] = name
         }
     }
 

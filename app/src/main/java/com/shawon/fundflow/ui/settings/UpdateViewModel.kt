@@ -3,13 +3,13 @@ package com.shawon.fundflow.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shawon.fundflow.core.update.UpdateManager
+import com.shawon.fundflow.core.update.UpdateStatus
 import com.shawon.fundflow.data.local.UserPreferences
 import com.shawon.fundflow.data.remote.model.GitHubRelease
 import com.shawon.fundflow.data.repository.UpdateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -21,8 +21,11 @@ class UpdateViewModel @Inject constructor(
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<UpdateUiState>(UpdateUiState.Idle)
-    val uiState = _uiState.asStateFlow()
+    val uiState: StateFlow<UpdateStatus> = updateManager.updateState
+
+    val currentRelease: StateFlow<GitHubRelease?> = updateManager.currentRelease
+
+    val downloadProgress: StateFlow<Float> = updateManager.downloadProgress
 
     val lastCheckTime = userPreferences.lastUpdateCheckTime
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
@@ -33,19 +36,19 @@ class UpdateViewModel @Inject constructor(
     fun checkForUpdates(currentVersion: String) {
         viewModelScope.launch {
             userPreferences.checkAndTrackVersionChange(currentVersion)
-            _uiState.value = UpdateUiState.Checking
+            updateManager.setChecking()
             repository.getLatestRelease()
                 .onSuccess { release ->
                     userPreferences.updateLastUpdateCheckTime(System.currentTimeMillis())
                     val latestVersion = release.tagName.removePrefix("v")
                     if (isNewerVersion(currentVersion, latestVersion)) {
-                        _uiState.value = UpdateUiState.UpdateAvailable(release)
+                        updateManager.setAvailableUpdate(release)
                     } else {
-                        _uiState.value = UpdateUiState.UpToDate
+                        updateManager.setUpToDate()
                     }
                 }
                 .onFailure { error ->
-                    _uiState.value = UpdateUiState.Error(error.message ?: "Unknown error")
+                    updateManager.setError(error.message ?: "Unknown error")
                 }
         }
     }
@@ -63,22 +66,23 @@ class UpdateViewModel @Inject constructor(
         return false
     }
 
-    fun startUpdate(release: GitHubRelease) {
-        val asset = release.assets.firstOrNull { it.name.endsWith(".apk") }
-        if (asset != null) {
-            updateManager.downloadAndInstall(asset.downloadUrl, asset.name)
+    fun startUpdate(release: GitHubRelease?) {
+        if (release != null) {
+            val asset = release.assets.firstOrNull { it.name.endsWith(".apk") }
+            if (asset != null) {
+                updateManager.downloadAndInstall(asset.downloadUrl, asset.name)
+            }
+        } else {
+            // Manual trigger for already downloaded APK
+            updateManager.installLatestDownloadedApk()
         }
     }
 
     fun resetState() {
-        _uiState.value = UpdateUiState.Idle
+        updateManager.reset()
     }
-}
 
-sealed interface UpdateUiState {
-    data object Idle : UpdateUiState
-    data object Checking : UpdateUiState
-    data object UpToDate : UpdateUiState
-    data class UpdateAvailable(val release: GitHubRelease) : UpdateUiState
-    data class Error(val message: String) : UpdateUiState
+    fun refreshStatus() {
+        updateManager.refreshStatus()
+    }
 }
