@@ -119,14 +119,22 @@ This open-source project is licensed under the **MIT License** - see the [LICENS
 
 ---
 
-## 👨‍💻 Developer
+## 👨‍💻 Developer & Connect
 
-**Shawon Talukder**  
-Software Engineer at Green Delta Insurance PLC  
-Email: [shawon.taluckder2@gmail.com](mailto:shawon.taluckder2@gmail.com)  
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Profile-blue?style=flat&logo=linkedin)](https://www.linkedin.com/in/shawon-taluckder)  
-[![Fiverr](https://img.shields.io/badge/Fiverr-Hire_Me-green?style=flat&logo=fiverr)](https://www.fiverr.com/talukder_shawon/)
+<p align="left">
+  <strong>Shawon Talukder</strong><br>
+  <em>Software Engineer at Green Delta Insurance PLC</em>
+</p>
+
+Crafted with care, focus on performance, and privacy-first architecture. Feel free to connect for collaborations, freelance projects, or feedback!
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/shawon-taluckder)
+[![Fiverr](https://img.shields.io/badge/Fiverr-1DBF73?style=for-the-badge&logo=fiverr&logoColor=white)](https://www.fiverr.com/talukder_shawon/)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Melodious-nub)
+[![Gmail](https://img.shields.io/badge/Gmail-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:shawon.taluckder2@gmail.com)
 
 ---
 
-*Developed with ❤️ for the Android community.*
+<p align="center">
+  <sub>Developed with ❤️ for the Android & Open-Source Community.</sub>
+</p>
