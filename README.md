@@ -1,18 +1,30 @@
-# FundFlow 💸
+# FundFlow - Offline Budget Planner & Expense Tracker for Android
 
-Smart Budget. Smarter Life. A modern, privacy-focused, offline-first personal finance manager for Android.
-
+[![Latest Release](https://img.shields.io/github/v/release/Melodious-nub/FundFlow?color=blue&label=Latest%20Version)](https://github.com/Melodious-nub/FundFlow/releases/latest)
+[![Download APK](https://img.shields.io/badge/Download-Latest%20APK-brightgreen?logo=android)](https://github.com/Melodious-nub/FundFlow/releases/latest)
 [![Android Version](https://img.shields.io/badge/Android-8.0%2B-brightgreen.svg)](https://developer.android.com)
 [![Privacy](https://img.shields.io/badge/Privacy-Offline%20First-blue.svg)](#-privacy--security)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+**FundFlow** is a modern, privacy-focused, offline-first personal finance manager and daily budget planner for Android. Break away from rigid monthly limits, track day-to-day spending with custom cycles, analyze your financial trends with high-contrast charts, and keep your financial data 100% private.
+
+---
+
+## 📥 Download FundFlow Android APK
+
+Get the latest stable release APK directly:
+
+[![Download APK Button](https://img.shields.io/badge/Download-FundFlow%20v1.1.0%20APK-success?style=for-the-badge&logo=android)](https://github.com/Melodious-nub/FundFlow/releases/latest)
+
+> 💡 **Release Archives:** View all version changelogs and previous builds in the [GitHub Releases](https://github.com/Melodious-nub/FundFlow/releases) section.
 
 ---
 
 ## 🌟 Overview
 
-**FundFlow** is a premium expense tracking utility designed for users who demand both flexibility and privacy. Built with a **"User-First"** philosophy, FundFlow breaks away from the rigid monthly constraints of traditional finance apps, allowing you to manage your money according to your life’s actual rhythm.
+**FundFlow** is a premium personal finance and expense tracking utility designed for users who demand both flexibility and strict privacy. Built with a **"User-First"** philosophy, FundFlow breaks away from the rigid monthly constraints of traditional budget apps, allowing you to manage your money according to your life’s actual rhythm.
 
-It is a **100% Native Android** application built using the latest modern tech stack, ensuring a fluid, high-performance experience without the bloat.
+It is a **100% Native Android** application built using the latest modern tech stack (Kotlin & Jetpack Compose), ensuring a fluid, high-performance experience without any bloatware or background battery drain.
 
 ---
 
@@ -25,18 +37,18 @@ Furthermore, many popular finance apps require you to link your bank accounts or
 2. **Protects my data:** Keep everything on my device, with cloud backups being a *choice*, not a requirement.
 3. **Looks Professional:** Provide high-end analytics that actually make sense.
 
-So, I built FundFlow to be the professional financial companion I wanted for myself.
+So, I built FundFlow to be the professional financial companion I wanted for myself: **Open Source, Offline, and Fully Private.**
 
 ---
 
 ## ✨ Key Features
 
 ### 📅 Custom Budget Cycles
-Forget rigid calendar months. FundFlow allows you to define your own budget periods—whether it's weekly, bi-weekly, or custom ranges. The app dynamically calculates your balance and progress based on your unique cycle dates.
+Forget rigid calendar months. FundFlow allows you to define your own budget periods—whether it's weekly, bi-weekly, or custom project date ranges. The app dynamically calculates your balance, daily "Safe Spending" buffer, and overall progress based on your unique cycle dates.
 
 ### 📊 Professional Analytics & Insights
 Powered by **Vico Charts**, visualize your financial health with high-end charts optimized for clarity:
-- **Daily Spending:** High-contrast bar charts to track your day-to-day fluctuations.
+- **Daily Spending:** High-contrast bar charts to track day-to-day fluctuations.
 - **Cumulative Trends:** Smooth line charts showing the "flow" of your total spending over time.
 - **Category Breakdown:** Interactive progress bars that show exactly where your money is going.
 
@@ -52,7 +64,7 @@ A truly professional app should look great in any lighting. FundFlow features a 
 - **Dark Mode:** A battery-saving, eye-friendly high-contrast dark UI.
 - **Light Mode:** A crisp, clean white UI with optimized system status bars (clock/icons correctly tinted for visibility).
 
-### 📝 Professional Note Editor
+### 📝 Professional Note Editor & Smart Auto-Sum
 Add context to your expenses with our advanced note-taking feature:
 - **Automatic Lists:** Start a line with `1. ` or `- ` and FundFlow will automatically continue the numbering or bullet points on the next line.
 - **Smart Auto-Sum:** Mention amounts in parentheses within your notes (e.g., `(500) (100)`) and FundFlow will automatically sum them up into the expense amount field.
@@ -73,47 +85,37 @@ Your financial data belongs to you, not a server. FundFlow works entirely offlin
 - **UI Framework:** Jetpack Compose with Material 3
 - **Architecture:** MVVM + Clean Architecture
 - **Dependency Injection:** Hilt
-- **Database:** Room (Offline-first persistence)
+- **Database:** Room SQLite (Offline-first local persistence)
 - **Background Tasks:** WorkManager (For auto-updates and auto-backups)
 - **Charts:** Vico (High-performance charting)
 
 ---
 
-## 🛡️ Privacy & Security
-
-This app is designed to be a "Vault" for your financial data.
-- **Data Collection:** Zero. We do not track your spending, your location, or your identity.
-- **Permissions:** 
-    - `INTERNET`: Only used for optional Google Drive backups and checking for app updates.
-    - `POST_NOTIFICATIONS`: Used only to alert you if a scheduled background backup fails.
-- **Encryption:** All local data is stored within the app's secure sandbox.
-
----
-
 ## 🚀 How to Use
 
-1. **Install** the APK.
-2. **Create a Cycle:** Set your budget amount and your preferred date range.
-3. **Log Expenses:** Add your daily spending with categories and notes.
-4. **Manage Cycles:** Access "Manage Cycles" in Settings to view your history, edit active budget ranges, or delete old periods to keep your dashboard clean.
-5. **Track Progress:** Use the Dashboard to see your "Safe Spending" amount per day to stay on track.
-6. **Analyze:** Visit the Analytics tab to visualize your financial flow.
+1. **Download & Install** the APK from the [Download Section](#-download-fundflow-android-apk).
+2. **Create a Cycle:** Set your budget amount and your preferred custom date range.
+3. **Log Expenses:** Add your daily spending with categories, tags, and smart notes.
+4. **Manage Cycles:** Access "Manage Cycles" in Settings to view your history, edit active budget ranges, or delete old periods.
+5. **Track Progress:** Use the Dashboard to see your "Safe Spending" amount per day to stay on budget.
+6. **Analyze:** Visit the Analytics tab to visualize your cash flow and category breakdown.
 
 ---
 
-## 📥 Download & Installation
+## 🛡️ Privacy & Security
 
-Get the latest version of FundFlow directly from the releases page:
-
-[![Download APK Button](https://img.shields.io/badge/Download-ScreenLocker%20APK-success?style=for-the-badge&logo=android)](https://github.com/Melodious-nub/FundFlow/releases/latest)
-
-> **Alternative:** You can also check all previous versions in the [GitHub Releases](https://github.com/Melodious-nub/FundFlow/releases) section.
+This app is designed to be a "Vault" for your financial data:
+- **Data Collection:** Zero. We do not track your spending, location, or personal identity.
+- **Permissions:** 
+    - `INTERNET`: Only used for user-initiated Google Drive backups and checking GitHub app updates.
+    - `POST_NOTIFICATIONS`: Used only to alert you if a scheduled background backup fails.
+- **Encryption:** All local data is stored within the application's secure sandbox.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This open-source project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ---
 
