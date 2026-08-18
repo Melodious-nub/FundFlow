@@ -20,6 +20,23 @@ Get the latest stable release APK directly:
 
 ---
 
+## 📱 App Screenshots
+
+<p align="center">
+  <img src="screenshots/fundflow-onboarding-startup.png" width="23%" alt="FundFlow Startup and Onboarding Screen" />
+  <img src="screenshots/fundflow-home-dashboard.png" width="23%" alt="FundFlow Home Dashboard and Safe Spending" />
+  <img src="screenshots/fundflow-transaction-history.png" width="23%" alt="FundFlow Transaction History and Cycle Log" />
+  <img src="screenshots/fundflow-spending-analytics-charts.png" width="23%" alt="FundFlow Spending Analytics and Vico Charts" />
+</p>
+
+<p align="center">
+  <img src="screenshots/fundflow-category-breakdown-insights.png" width="23%" alt="FundFlow Expense Category Breakdown Insights" />
+  <img src="screenshots/fundflow-app-settings.png" width="23%" alt="FundFlow Settings" />
+  <img src="screenshots/fundflow-in-app-updater.png" width="23%" alt="FundFlow In-App Updater via GitHub Releases" />
+</p>
+
+---
+
 ## 🌟 Overview
 
 **FundFlow** is a premium personal finance and expense tracking utility designed for users who demand both flexibility and strict privacy. Built with a **"User-First"** philosophy, FundFlow breaks away from the rigid monthly constraints of traditional budget apps, allowing you to manage your money according to your life’s actual rhythm.
