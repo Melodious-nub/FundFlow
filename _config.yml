@@ -1,1 +1,5 @@
-
+title: "FundFlow - Offline Budget Planner & Expense Tracker for Android"
+description: "A lightweight, privacy-focused Android expense manager and offline budget planner app with custom cycles and smart analytics."
+theme: jekyll-theme-primer
+plugins:
+  - jekyll-seo-tag
