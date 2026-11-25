@@ -14,9 +14,20 @@
 
 Get the latest stable release APK directly:
 
-[![Download APK Button](https://img.shields.io/badge/Download-FundFlow%20v1.1.0%20APK-success?style=for-the-badge&logo=android)](https://github.com/Melodious-nub/FundFlow/releases/latest)
+[![Download APK Button](https://img.shields.io/badge/Download-FundFlow%20v1.1.1%20APK-success?style=for-the-badge&logo=android)](https://github.com/Melodious-nub/FundFlow/releases/latest)
 
 > 💡 **Release Archives:** View all version changelogs and previous builds in the [GitHub Releases](https://github.com/Melodious-nub/FundFlow/releases) section.
+
+> ⚠️ **IMPORTANT NOTE FOR v1.0 USERS (One-Time Reinstall):**
+> Starting from **v1.1.1**, FundFlow uses official Production Signing Credentials for security and automatic in-app updates.
+> 
+> If you are upgrading from **v1.0** (early preview build):
+> 1. Go to **Settings > Backup & Restore** and create a backup (Local or Google Drive).
+> 2. Uninstall the old **v1.0** app from your device.
+> 3. Download and install **v1.1.1 APK**.
+> 4. Restore your data during setup.
+> 
+> *All future updates from v1.1.1 onwards will auto-update seamlessly in one tap!*
 
 ---
 
@@ -136,14 +147,14 @@ This open-source project is licensed under the **MIT License** - see the [LICENS
 
 ---
 
-## 👨‍💻 Developer & Connect
+## 👨💻 Developer & Connect
 
 <p align="left">
   <strong>Shawon Talukder</strong><br>
   <em>Software Engineer at Green Delta Insurance PLC</em>
 </p>
 
-Crafted with care, focus on performance, and privacy-first architecture. Feel free to connect for collaborations, freelance projects, or feedback!
+Built for developers who care about craftsmanship, speed, and privacy. Contributions, bug reports, and feature ideas are always welcome!
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/shawon-taluckder)
 [![Fiverr](https://img.shields.io/badge/Fiverr-1DBF73?style=for-the-badge&logo=fiverr&logoColor=white)](https://www.fiverr.com/talukder_shawon/)
@@ -153,5 +164,5 @@ Crafted with care, focus on performance, and privacy-first architecture. Feel fr
 ---
 
 <p align="center">
-  <sub>Developed with ❤️ for the Android & Open-Source Community.</sub>
+  <sub>Developed with ❤️ for the Developer &amp; Open-Source Community.</sub>
 </p>
