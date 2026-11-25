@@ -35,4 +35,3 @@
 -optimizations !code/simplification/arithmetic,!field/*,!class/merging/*
 -mergeinterfacesaggressively
 -overloadaggressively
--obfuscationdictionary none
