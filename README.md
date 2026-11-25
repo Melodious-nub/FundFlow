@@ -22,10 +22,10 @@ Get the latest stable release APK directly:
 > Starting from **v1.1.1**, FundFlow uses official Production Signing Credentials for security and automatic in-app updates.
 > 
 > If you are upgrading from **v1.0** (early preview build):
-> 1. Go to **Settings > Backup & Restore** and create a backup (Local or Google Drive).
+> 1. Go to **Settings > Backup & Restore** and create a **Local Backup** (Google Drive backup is supported from v1.1.1+ onwards).
 > 2. Uninstall the old **v1.0** app from your device.
 > 3. Download and install **v1.1.1 APK**.
-> 4. Restore your data during setup.
+> 4. Restore your data from Local Backup during setup.
 > 
 > *All future updates from v1.1.1 onwards will auto-update seamlessly in one tap!*
 
