@@ -33,6 +33,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -149,7 +150,7 @@ fun FundFlowAppContent() {
     )
 
     val showBottomBar = bottomBarScreens.any { screen ->
-        currentDestination?.hierarchy?.any { it.route?.contains(screen::class.simpleName ?: "") == true } == true
+        currentDestination?.hierarchy?.any { it.hasRoute(screen::class) } == true
     }
 
     Scaffold(
@@ -167,7 +168,7 @@ fun FundFlowAppContent() {
 
                     items.forEach { (label, icon, screen) ->
                         val isSelected = currentDestination?.hierarchy?.any { 
-                            it.route?.contains(screen::class.simpleName ?: "") == true 
+                            it.hasRoute(screen::class)
                         } == true
                         
                         NavigationBarItem(

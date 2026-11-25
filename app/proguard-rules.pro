@@ -19,10 +19,19 @@
 -dontwarn org.apache.http.**
 -dontwarn org.checkerframework.**
 
+# Navigation & Serialization
+-keep class com.shawon.fundflow.core.common.Screen** { *; }
+-keep class com.shawon.fundflow.data.backup.model.** { *; }
+-keep class com.shawon.fundflow.domain.model.** { *; }
+-keep class com.shawon.fundflow.data.local.entities.** { *; }
+
 # Kotlin Serialization
 -keepattributes *Annotation*, EnclosingMethod, InnerClasses
 -keepclassmembers class ** {
     @kotlinx.serialization.SerialName <fields>;
+}
+-keepclassmembers class * {
+    @kotlinx.serialization.Serializable *;
 }
 
 # Compose & Material
